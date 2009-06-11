@@ -20,28 +20,13 @@
  */
 
 #include "frontend.h"
-#include <QVBoxLayout>
 
 Frontend::Frontend(QWidget* parent)
-	: QWidget(parent)
+	: QDialog(parent)
 {
-	instructions = new QLabel;
-	convert = new QPushButton(tr("&Convert"));
-	status = new QLabel;
-
-	instructions->setText(tr("Instructions will go here."));
-	instructions->setWordWrap(true);
-
-	QVBoxLayout* layout = new QVBoxLayout;
-	layout->addWidget(instructions);
-	layout->addWidget(convert);
-	layout->addWidget(status);
-	setLayout(layout);
-
-	transcoder = new Transcoder(QString("test.flv"));
-
-	// when user clicks "Convert", start transcoding
-	connect(convert, SIGNAL(released()), this, SLOT(transcode()));
+	ui.setupUi(this);
+	transcoder = new Transcoder("test.flv");
+	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
 		this, SLOT(updateStatus(QString)));
 }
@@ -53,5 +38,5 @@ void Frontend::transcode()
 
 void Frontend::updateStatus(QString statusText)
 {
-	status->setText(statusText);
+	ui.status->setText(statusText);
 }

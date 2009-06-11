@@ -23,11 +23,9 @@
 #define H_FRONTEND
 
 #include "transcoder.h"
-#include <QWidget>
-#include <QLabel>
-#include <QPushButton>
+#include "ui_dialog.h"
 
-class Frontend : public QWidget
+class Frontend : public QDialog
 {
 	Q_OBJECT
 
@@ -39,9 +37,7 @@ public slots:
 	void updateStatus(QString statusText);
 
 private:
-	QLabel* instructions;
-	QPushButton* convert;
-	QLabel* status;
+	Ui::Dialog ui;
 
 	Transcoder* transcoder;
 };

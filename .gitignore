@@ -9,6 +9,7 @@
 moc_*
 Makefile
 qtheorafrontend.pro
+ui_*.h
 
 # Binary
 *.o
