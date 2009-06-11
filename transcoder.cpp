@@ -28,6 +28,8 @@ Transcoder::Transcoder(QString file, QObject* parent)
 {
 }
 
+#define BUF_SIZE 256
+
 void Transcoder::run()
 {
 	QProcess* proc = new QProcess;
@@ -39,6 +41,7 @@ void Transcoder::run()
 	proc->waitForStarted();
 	proc->waitForReadyRead();
 
+	char buf[BUF_SIZE];
 	while (proc->readLine(buf, BUF_SIZE) > 0) {
 		if (QString(buf).startsWith("f2t")) {
 			emit statusUpdate(QString(buf));

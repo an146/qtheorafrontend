@@ -24,8 +24,6 @@
 
 #include <QThread>
 
-#define BUF_SIZE 256
-
 class Transcoder : public QThread
 {
 	Q_OBJECT
@@ -41,7 +39,6 @@ protected:
 
 private:
 	QString input_filename;
-	char buf[BUF_SIZE];
 };
 
 #endif // H_TRANSCODER
