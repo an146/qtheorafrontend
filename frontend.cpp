@@ -22,10 +22,23 @@
 #include "frontend.h"
 
 Frontend::Frontend(QWidget* parent)
-	: QDialog(parent)
+	: QDialog(parent),
+	input_dlg(this, "Select the input file", QString(), "*.flv"),
+	output_dlg(this, "Select the output file", QString(), "*.ogv")
 {
 	ui.setupUi(this);
-	transcoder = new Transcoder("test.flv");
+	transcoder = new Transcoder();
+
+	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
+	connect(ui.output_select, SIGNAL(released()), &output_dlg, SLOT(exec()));
+	connect(&input_dlg, SIGNAL(fileSelected(QString)), this, SLOT(inputSelected(QString)));
+	connect(&output_dlg, SIGNAL(fileSelected(QString)), this, SLOT(outputSelected(QString)));
+	input_dlg.setFileMode(QFileDialog::ExistingFile);
+	output_dlg.setAcceptMode(QFileDialog::AcceptSave);
+	output_dlg.setFileMode(QFileDialog::AnyFile);
+	output_dlg.setDefaultSuffix("ogv");
+
+	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
 		this, SLOT(updateStatus(QString)));
@@ -33,10 +46,33 @@ Frontend::Frontend(QWidget* parent)
 
 void Frontend::transcode()
 {
+	transcoder->set_filenames(ui.input->text(), ui.output->text());
 	transcoder->start();
 }
 
 void Frontend::updateStatus(QString statusText)
 {
 	ui.status->setText(statusText);
+}
+
+void Frontend::inputSelected(const QString &s)
+{
+	ui.input->setText(s);
+}
+
+void Frontend::outputSelected(const QString &s)
+{
+	ui.output->setText(s);
+}
+
+void Frontend::setDefaultOutput()
+{
+	QString s = ui.input->text();
+	if (s.isEmpty())
+		return;
+
+	if (s.right(4) == ".flv")
+		s.chop(4);
+	s += ".ogv";
+	ui.output->setText(s);
 }

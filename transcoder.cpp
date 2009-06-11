@@ -22,10 +22,15 @@
 #include "transcoder.h"
 #include <QProcess>
 
-Transcoder::Transcoder(QString file, QObject* parent)
+Transcoder::Transcoder(QObject* parent)
 	: QThread(parent)
-	, input_filename(file)
 {
+}
+
+void Transcoder::set_filenames(const QString &input, const QString &output)
+{
+	input_filename = input;
+	output_filename = output;
 }
 
 #define BUF_SIZE 256
@@ -36,6 +41,7 @@ void Transcoder::run()
 
 	proc->setReadChannel(QProcess::StandardError);
 	proc->start("ffmpeg2theora", QStringList() << "--frontend"
+		<< "--output" << output_filename
 		<< input_filename);
 
 	proc->waitForStarted();

@@ -22,6 +22,7 @@
 #ifndef H_FRONTEND
 #define H_FRONTEND
 
+#include <QFileDialog>
 #include "transcoder.h"
 #include "ui_dialog.h"
 
@@ -35,9 +36,13 @@ public:
 public slots:
 	void transcode();
 	void updateStatus(QString statusText);
+	void inputSelected(const QString &);
+	void outputSelected(const QString &);
+	void setDefaultOutput();
 
 private:
 	Ui::Dialog ui;
+	QFileDialog input_dlg, output_dlg;
 
 	Transcoder* transcoder;
 };

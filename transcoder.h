@@ -29,7 +29,8 @@ class Transcoder : public QThread
 	Q_OBJECT
 
 public:
-	Transcoder(QString input, QObject* parent = 0);
+	explicit Transcoder(QObject* parent = 0);
+	void set_filenames(const QString &input, const QString &output);
 
 signals:
 	void statusUpdate(QString status);
@@ -39,6 +40,7 @@ protected:
 
 private:
 	QString input_filename;
+	QString output_filename;
 };
 
 #endif // H_TRANSCODER
