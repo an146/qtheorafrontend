@@ -1,0 +1,15 @@
+# VIM swap files
+*.swp
+
+# Test videos
+*.flv
+*.ogv
+
+# Qt-generated stuff
+moc_*
+Makefile
+qtheorafrontend.pro
+
+# Binary
+*.o
+qtheorafrontend
