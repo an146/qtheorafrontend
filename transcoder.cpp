@@ -44,7 +44,7 @@ void Transcoder::run()
 	char buf[BUF_SIZE];
 	while (proc->readLine(buf, BUF_SIZE) > 0) {
 		if (QString(buf).startsWith("f2t")) {
-			emit statusUpdate(QString(buf));
+			emit statusUpdate(QString(buf).trimmed());
 		}
 		proc->waitForReadyRead();
 	}
