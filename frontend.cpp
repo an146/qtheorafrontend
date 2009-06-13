@@ -21,9 +21,11 @@
 
 #include "frontend.h"
 
+static const char *input_filter = "Video files (*.avi *.mpg *.flv);;Any files (*.*)";
+
 Frontend::Frontend(QWidget* parent)
 	: QDialog(parent),
-	input_dlg(this, "Select the input file", QString(), "*.flv"),
+	input_dlg(this, "Select the input file", QString(), input_filter),
 	output_dlg(this, "Select the output file", QString(), "*.ogv")
 {
 	ui.setupUi(this);
