@@ -87,8 +87,7 @@ void Frontend::setDefaultOutput()
 	if (s.isEmpty())
 		return;
 
-	if (s.right(4) == ".flv")
-		s.chop(4);
-	s += ".ogv";
-	ui.output->setText(s);
+	QFileInfo f(s);
+	QString name = f.completeBaseName() + ".ogv";
+	ui.output->setText(f.dir().filePath(name));
 }
