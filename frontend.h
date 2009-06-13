@@ -38,6 +38,7 @@ public slots:
 	void updateStatus(QString statusText);
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
+	void filesUpdated();
 	void setDefaultOutput();
 
 private:

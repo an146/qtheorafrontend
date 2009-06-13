@@ -39,9 +39,12 @@ Frontend::Frontend(QWidget* parent)
 	output_dlg.setDefaultSuffix("ogv");
 
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
+	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(filesUpdated()));
+	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(filesUpdated()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
 		this, SLOT(updateStatus(QString)));
+	filesUpdated();
 }
 
 void Frontend::transcode()
@@ -58,11 +61,24 @@ void Frontend::updateStatus(QString statusText)
 void Frontend::inputSelected(const QString &s)
 {
 	ui.input->setText(s);
+
+	/* if user has selected the same file,
+	 * ui.input->text() doesn't change, but still
+	 * he probably wants default output to be set
+	 */
+	setDefaultOutput();
 }
 
 void Frontend::outputSelected(const QString &s)
 {
 	ui.output->setText(s);
+}
+
+void Frontend::filesUpdated()
+{
+	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
+	ui.transcode->setEnabled(!missing_data);
+	ui.transcode->setDefault(!missing_data);
 }
 
 void Frontend::setDefaultOutput()
