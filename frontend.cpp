@@ -42,19 +42,21 @@ Frontend::Frontend(QWidget* parent)
 	output_dlg.setDefaultSuffix("ogv");
 
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
-	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(filesUpdated()));
-	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(filesUpdated()));
+	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
+	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
+	connect(ui.cancel, SIGNAL(released()), transcoder, SLOT(stop()));
+	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
 		this, SLOT(updateStatus(QString)));
-	filesUpdated();
+	updateButtons();
 }
 
 void Frontend::transcode()
 {
-	transcoder->set_filenames(ui.input->text(), ui.output->text());
-	transcoder->start();
+	transcoder->start(ui.input->text(), ui.output->text());
 }
 
 void Frontend::updateStatus(QString statusText)
@@ -73,11 +75,14 @@ void Frontend::outputSelected(const QString &s)
 	ui.output->setText(s);
 }
 
-void Frontend::filesUpdated()
+void Frontend::updateButtons()
 {
+	bool running = transcoder->isRunning();
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
-	ui.transcode->setEnabled(!missing_data);
-	ui.transcode->setDefault(!missing_data);
+	bool can_start = !running && !missing_data;
+	ui.transcode->setEnabled(can_start);
+	ui.transcode->setDefault(can_start);
+	ui.cancel->setEnabled(running);
 }
 
 void Frontend::outputEdited()

@@ -23,6 +23,8 @@
 #define H_TRANSCODER
 
 #include <QThread>
+#include <QProcess>
+#include <QMutex>
 
 class Transcoder : public QThread
 {
@@ -30,7 +32,10 @@ class Transcoder : public QThread
 
 public:
 	explicit Transcoder(QObject* parent = 0);
-	void set_filenames(const QString &input, const QString &output);
+	void start(const QString &input, const QString &output);
+
+public slots:
+	void stop();
 
 signals:
 	void statusUpdate(QString status);
@@ -38,9 +43,18 @@ signals:
 protected:
 	void run();
 
+protected slots:
+	void readyRead();
+	void procFinished(int, QProcess::ExitStatus);
+
+signals:
+	void terminate();
+
 private:
 	QString input_filename;
 	QString output_filename;
+	QProcess proc;
+	QString finish_message;
 };
 
 #endif // H_TRANSCODER
