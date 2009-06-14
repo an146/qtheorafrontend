@@ -33,7 +33,7 @@ class Frontend : public QDialog
 public:
 	Frontend(QWidget* parent = 0);
 
-public slots:
+protected slots:
 	void transcode();
 	void updateStatus(QString statusText);
 	void inputSelected(const QString &);
