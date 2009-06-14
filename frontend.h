@@ -39,11 +39,13 @@ public slots:
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
 	void filesUpdated();
+	void outputEdited();
 	void setDefaultOutput();
 
 private:
 	Ui::Dialog ui;
 	QFileDialog input_dlg, output_dlg;
+	bool output_auto;
 
 	Transcoder* transcoder;
 };

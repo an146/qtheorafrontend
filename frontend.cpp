@@ -26,7 +26,8 @@ static const char *input_filter = "Video files (*.avi *.mpg *.flv);;Any files (*
 Frontend::Frontend(QWidget* parent)
 	: QDialog(parent),
 	input_dlg(this, "Select the input file", QString(), input_filter),
-	output_dlg(this, "Select the output file", QString(), "*.ogv")
+	output_dlg(this, "Select the output file", QString(), "*.ogv"),
+	output_auto(true)
 {
 	ui.setupUi(this);
 	transcoder = new Transcoder();
@@ -43,6 +44,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(filesUpdated()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(filesUpdated()));
+	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
 		this, SLOT(updateStatus(QString)));
@@ -63,11 +65,6 @@ void Frontend::updateStatus(QString statusText)
 void Frontend::inputSelected(const QString &s)
 {
 	ui.input->setText(s);
-
-	/* if user has selected the same file,
-	 * ui.input->text() doesn't change, but still
-	 * he probably wants default output to be set
-	 */
 	setDefaultOutput();
 }
 
@@ -83,8 +80,16 @@ void Frontend::filesUpdated()
 	ui.transcode->setDefault(!missing_data);
 }
 
+void Frontend::outputEdited()
+{
+	output_auto = ui.output->text().isEmpty();
+}
+
 void Frontend::setDefaultOutput()
 {
+	if (!output_auto)
+		return;
+
 	QString s = ui.input->text();
 	if (s.isEmpty())
 		return;
