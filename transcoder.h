@@ -26,16 +26,18 @@
 #include <QProcess>
 #include <QMutex>
 
+class Frontend;
+
 class Transcoder : public QThread
 {
 	Q_OBJECT
 
 public:
-	explicit Transcoder(QObject* parent = 0);
+	explicit Transcoder(Frontend *);
 	void start(const QString &input, const QString &output);
 
 public slots:
-	void stop();
+	void stop(bool keep);
 
 signals:
 	void statusUpdate(QString status);
@@ -55,6 +57,8 @@ private:
 	QString output_filename;
 	QProcess proc;
 	QString finish_message;
+	bool keep_output;
+	Frontend *frontend;
 };
 
 #endif // H_TRANSCODER

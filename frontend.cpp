@@ -19,6 +19,8 @@
  *
  */
 
+#include <QMessageBox>
+#include <QCloseEvent>
 #include "frontend.h"
 
 static const char *input_filter = "Video files (*.avi *.mpg *.flv);;Any files (*.*)";
@@ -27,10 +29,11 @@ Frontend::Frontend(QWidget* parent)
 	: QDialog(parent),
 	input_dlg(this, "Select the input file", QString(), input_filter),
 	output_dlg(this, "Select the output file", QString(), "*.ogv"),
-	output_auto(true)
+	output_auto(true),
+	exitting(false)
 {
 	ui.setupUi(this);
-	transcoder = new Transcoder();
+	transcoder = new Transcoder(this);
 
 	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
 	connect(ui.output_select, SIGNAL(released()), &output_dlg, SLOT(exec()));
@@ -46,7 +49,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
-	connect(ui.cancel, SIGNAL(released()), transcoder, SLOT(stop()));
+	connect(ui.cancel, SIGNAL(released()), this, SLOT(cancel()));
 	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
@@ -54,9 +57,48 @@ Frontend::Frontend(QWidget* parent)
 	updateButtons();
 }
 
+int Frontend::cancel_ask(const QString &reason, bool cancel_button)
+{
+	QMessageBox::StandardButtons buttons = QMessageBox::Save | QMessageBox::Discard;
+	if (cancel_button)
+		buttons |= QMessageBox::Cancel;
+	return QMessageBox::question(
+		this,
+		"qtheorafrontend",
+		reason + "Do you want to keep the partially encoded file?",
+		buttons,
+		QMessageBox::Discard
+	);
+}
+
+void Frontend::closeEvent(QCloseEvent *event)
+{
+	if (!transcoder->isRunning())
+		event->accept();
+	else {
+		if (cancel())
+			exitting = true;
+		event->ignore();
+	}
+}
+
 void Frontend::transcode()
 {
 	transcoder->start(ui.input->text(), ui.output->text());
+}
+
+bool Frontend::cancel()
+{
+	bool keep = false;
+
+	switch (cancel_ask("You are going to cancel the encoding. ", true)) {
+	case QMessageBox::Save:
+		keep = true;
+	case QMessageBox::Discard:
+		transcoder->stop(keep);
+		return true;
+	}
+	return false;
 }
 
 void Frontend::updateStatus(QString statusText)
@@ -83,6 +125,8 @@ void Frontend::updateButtons()
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
+	if (exitting)
+		close();
 }
 
 void Frontend::outputEdited()

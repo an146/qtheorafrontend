@@ -32,9 +32,14 @@ class Frontend : public QDialog
 
 public:
 	Frontend(QWidget* parent = 0);
+	int cancel_ask(const QString &, bool);
+
+protected:
+	void closeEvent(QCloseEvent *);
 
 protected slots:
 	void transcode();
+	bool cancel();
 	void updateStatus(QString statusText);
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
@@ -46,6 +51,7 @@ private:
 	Ui::Dialog ui;
 	QFileDialog input_dlg, output_dlg;
 	bool output_auto;
+	bool exitting;
 
 	Transcoder* transcoder;
 };

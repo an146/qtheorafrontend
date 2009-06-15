@@ -21,10 +21,14 @@
 
 #include <QProcess>
 #include <QMetaType>
+#include <QFile>
+#include <QMessageBox>
+#include <QTimer>
 #include "transcoder.h"
+#include "frontend.h"
 
-Transcoder::Transcoder(QObject* parent)
-	: QThread(parent)
+Transcoder::Transcoder(Frontend *f)
+	: QThread(NULL), frontend(f)
 {
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
 	proc.setReadChannel(QProcess::StandardError);
@@ -43,10 +47,12 @@ void Transcoder::start(const QString &input, const QString &output)
 	}
 }
 
-void Transcoder::stop()
+void Transcoder::stop(bool keep)
 {
 	if (isRunning()) {
-		finish_message = "Encoding cancelled";
+		keep_output = keep;
+		finish_message = keep ? QString("Encoding cancelled. Partial result kept") :
+		                        QString("Encoding cancelled. Partial result deleted");
 		emit terminate();
 	}
 }
@@ -65,12 +71,23 @@ void Transcoder::readyRead()
 
 void Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 {
-	bool ok = status == 0 && qstatus == 0;
 	if (finish_message.isEmpty()) {
-		finish_message = ok ?
-			QString("Encoding finished successfully") :
-			QString("Encoding failed");
+		/* the process died without our help */
+		bool ok = status == 0 && qstatus == 0;
+		if (ok) {
+			QMessageBox::information(frontend, "qtheorafeontend", finish_message);
+			keep_output = true;
+			finish_message = "Encoding finished successfully";
+		}
+		else {
+			keep_output = frontend->cancel_ask("Encoding failed. ", false) == QMessageBox::Save;
+			finish_message = keep_output ?
+				QString("Encoding failed. Partial file kept") :
+				QString("Encoding failed. Partial file deleted");
+		}
 	}
+	if (!keep_output)
+		QFile(output_filename).remove();
 	emit statusUpdate(finish_message);
 	quit();
 }
@@ -78,6 +95,7 @@ void Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 void Transcoder::run()
 {
 	finish_message = "";
+	keep_output = true;
 	proc.start("ffmpeg2theora", QStringList() << "--frontend"
 		<< "--output" << output_filename
 		<< input_filename);
