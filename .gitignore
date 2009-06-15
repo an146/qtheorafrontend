@@ -7,6 +7,7 @@
 
 # Qt-generated stuff
 moc_*
+qrc_*
 Makefile
 qtheorafrontend.pro
 ui_*.h
