@@ -59,6 +59,7 @@ private:
 	QString finish_message;
 	bool keep_output;
 	Frontend *frontend;
+	QString ffmpeg2theora;
 };
 
 #endif // H_TRANSCODER

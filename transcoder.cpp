@@ -36,6 +36,14 @@ Transcoder::Transcoder(Frontend *f)
 	connect(&proc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(procFinished(int, QProcess::ExitStatus)));
 	connect(&proc, SIGNAL(readyRead()), this, SLOT(readyRead()));
 	connect(this, SIGNAL(terminate()), &proc, SLOT(terminate()));
+
+	ffmpeg2theora = "ffmpeg2theora";
+	QString suffix = QFileInfo(QCoreApplication::applicationFilePath()).suffix();
+	if (!suffix.isEmpty())
+		ffmpeg2theora += "." + suffix;
+	QString bundled = QDir(QCoreApplication::applicationDirPath()).filePath(ffmpeg2theora);
+	if (QFile(bundled).exists())
+		ffmpeg2theora = bundled;
 }
 
 void Transcoder::start(const QString &input, const QString &output)
@@ -96,7 +104,7 @@ void Transcoder::run()
 {
 	finish_message = "";
 	keep_output = true;
-	proc.start("ffmpeg2theora", QStringList() << "--frontend"
+	proc.start(ffmpeg2theora, QStringList() << "--frontend"
 		<< "--output" << output_filename
 		<< input_filename);
 
