@@ -13,4 +13,5 @@ ui_*.h
 
 # Binary
 *.o
+*.exe
 qtheorafrontend
