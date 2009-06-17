@@ -108,6 +108,8 @@ void Transcoder::run()
 		<< "--output" << output_filename
 		<< input_filename);
 
-	proc.waitForStarted();
-	exec();
+	if (proc.waitForStarted())
+		exec();
+	else
+		emit statusUpdate("Encoding failed to start");
 }
