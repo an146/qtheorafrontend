@@ -1,2 +1,18 @@
 #!/bin/sh
-qmake
+
+usage () {
+	echo 'Usage: ./configure [--prefix=/usr/local]'
+}
+
+while [ -n "$1" ]; do
+    e="`expr "X$1" : 'X--\(.*=.*\)'`"
+    if [ -z "$e" ]; then
+        usage
+		exit
+	fi
+    eval "$e"
+    shift;
+done
+
+[ -z "$prefix" ] && prefix=/usr/local
+PREFIX="$prefix" qmake
