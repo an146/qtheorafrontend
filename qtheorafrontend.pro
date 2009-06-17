@@ -21,6 +21,11 @@ RC_FILE += src/resources.rc
 target.path = $$(PREFIX)/bin
 INSTALLS += target
 
+# hack for cross-compilation on win32
+win32 {
+	QMAKE_LFLAGS += -Wl,-subsystem,windows
+}
+
 # Mac OS X deployment
 macx {
 	CONFIG+=x86 ppc
