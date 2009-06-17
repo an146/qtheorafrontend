@@ -35,7 +35,7 @@ Transcoder::Transcoder(Frontend *f)
 	proc.moveToThread(this);
 	connect(&proc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(procFinished(int, QProcess::ExitStatus)));
 	connect(&proc, SIGNAL(readyRead()), this, SLOT(readyRead()));
-	connect(this, SIGNAL(terminate()), &proc, SLOT(terminate()));
+	connect(this, SIGNAL(terminate()), &proc, SLOT(kill()));
 
 	ffmpeg2theora = "ffmpeg2theora";
 	QString suffix = QFileInfo(QCoreApplication::applicationFilePath()).suffix();
