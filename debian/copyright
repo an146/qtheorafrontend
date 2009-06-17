@@ -1,0 +1,11 @@
+Copyright:
+
+    <Copyright (C) 2009 Anton Novikov>
+    <Copyright (C) 2009 Denver Gingerich>
+
+License:
+
+    GPLv3
+
+The Debian packaging is copyright 2009, Anton Novikov <an146@ya.ru> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.

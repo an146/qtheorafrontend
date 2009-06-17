@@ -1,0 +1,15 @@
+Source: qtheorafrontend
+Section: universe/graphics
+Priority: optional
+Maintainer: Anton Novikov <an146@ya.ru>
+Build-Depends: debhelper (>= 7), libqt4-dev
+Standards-Version: 3.8.0
+Homepage: http://github.com/an146/qtheorafrontend
+
+Package: qtheorafrontend
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ffmpeg2theora
+Description: Qt frontend for ffmpeg2theora
+  QTheoraFrontend is a GUI frontend for ffmpeg2theora. The goal of this
+  project is bring easy Theora and Vorbis encoding to to the masses.
+
