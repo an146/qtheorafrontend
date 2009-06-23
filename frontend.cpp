@@ -270,16 +270,6 @@ void Frontend::updateInfo()
 		ui. info_##f ->setText(present_##p(value));
 			FIELDS
 #undef FIELD
-			/*
-			char *key = strchr(buf, '"');
-			if (key == NULL)
-				continue;
-			for (char *i = buf + strlen(buf) - 1; i >= key; i--)
-				if (std::isspace(*i) || *i == ',')
-					*i = '\0';
-				else
-					break;
-					*/
 			proc.waitForReadyRead();
 		}
 		proc.waitForFinished();
