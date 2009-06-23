@@ -81,9 +81,9 @@ void Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 		/* the process died without our help */
 		bool ok = status == 0 && qstatus == 0;
 		if (ok) {
-			QMessageBox::information(frontend, "qtheorafeontend", finish_message);
 			keep_output = true;
 			finish_message = "Encoding finished successfully";
+			QMessageBox::information(frontend, "qtheorafeontend", finish_message);
 		}
 		else {
 			keep_output = frontend->cancel_ask("Encoding failed. ", false) == QMessageBox::Save;
