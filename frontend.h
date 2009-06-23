@@ -54,6 +54,7 @@ private:
 	QFileDialog input_dlg, output_dlg;
 	bool output_auto;
 	bool exitting;
+	bool input_valid;
 
 	Transcoder* transcoder;
 };

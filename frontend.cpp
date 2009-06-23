@@ -32,7 +32,8 @@ Frontend::Frontend(QWidget* parent)
 	input_dlg(this, "Select the input file", QString(), input_filter),
 	output_dlg(this, "Select the output file", QString(), "*.ogv"),
 	output_auto(true),
-	exitting(false)
+	exitting(false),
+	input_valid(false)
 {
 	ui.setupUi(this);
 	transcoder = new Transcoder(this);
@@ -47,6 +48,7 @@ Frontend::Frontend(QWidget* parent)
 	output_dlg.setDefaultSuffix("ogv");
 
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
+	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateInfo()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
@@ -111,7 +113,6 @@ void Frontend::updateStatus(QString statusText)
 void Frontend::inputSelected(const QString &s)
 {
 	ui.input->setText(s);
-	setDefaultOutput();
 }
 
 void Frontend::outputSelected(const QString &s)
@@ -123,7 +124,7 @@ void Frontend::updateButtons()
 {
 	bool running = transcoder->isRunning();
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
-	bool can_start = !running && !missing_data;
+	bool can_start = !running && !missing_data && input_valid;
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
@@ -148,7 +149,6 @@ void Frontend::setDefaultOutput()
 	QFileInfo f(s);
 	QString name = f.completeBaseName() + ".ogv";
 	ui.output->setText(f.dir().filePath(name));
-	updateInfo();
 }
 
 #define FIELDS \
@@ -283,7 +283,10 @@ void Frontend::updateInfo()
 			proc.waitForReadyRead();
 		}
 		proc.waitForFinished();
-	} else
+		input_valid = proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit;
+	} else {
 		updateStatus("Info retrieval failed to start");
+		input_valid = false;
+	}
 }
 
