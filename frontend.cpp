@@ -22,6 +22,7 @@
 
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <QDebug>
 #include "frontend.h"
 
 static const char *input_filter = "Video files (*.avi *.mpg *.flv);;Any files (*.*)";
@@ -147,4 +148,142 @@ void Frontend::setDefaultOutput()
 	QFileInfo f(s);
 	QString name = f.completeBaseName() + ".ogv";
 	ui.output->setText(f.dir().filePath(name));
+	updateInfo();
 }
+
+#define FIELDS \
+	FIELD(duration, time) \
+	FIELD(bitrate, bitrate) \
+	FIELD(size, file_size) \
+\
+	FIELD(video_codec, as_is) \
+	FIELD(video_bitrate, bitrate) \
+	FIELD(pixel_format, as_is) \
+	FIELD(height, as_is) \
+	FIELD(width, as_is) \
+	FIELD(framerate, as_is) \
+	FIELD(pixel_aspect_ratio, as_is) \
+	FIELD(display_aspect_ratio, as_is) \
+\
+	FIELD(audio_codec, as_is) \
+	FIELD(audio_bitrate, bitrate) \
+	FIELD(samplerate, as_is) \
+	FIELD(channels, as_is)
+
+void Frontend::clearInfo()
+{
+#define FIELD(f, p) ui. info_##f ->setText("");
+	FIELDS
+#undef FIELD
+}
+
+#define BUF_SIZE 256
+
+static QString untail(const QString &s, char c)
+{
+	QString ret = s.trimmed();
+	if (!ret.isEmpty() && ret[ret.size() - 1] == c)
+		ret.chop(1);
+	return ret;
+}
+
+static QString unquote(const QString &s)
+{
+	QString ret = s.trimmed();
+	if (!ret.isEmpty() && ret[0] == '"')
+		ret.remove(0, 1);
+	return untail(ret, '"');
+}
+
+static QString present_as_is(const QString &s)
+{
+	return s;
+}
+
+static QString present_time(const QString &s)
+{
+	bool ok;
+	long long seconds = (long long)(s.toDouble(&ok) + 0.5);
+	if (!ok || seconds < 0)
+		return s;
+	long long minutes = seconds / 60;
+	long long hours = minutes / 60;
+
+	char buf[BUF_SIZE];
+	snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
+	return buf;
+}
+
+static QString present_file_size(const QString &s)
+{
+	bool ok;
+	long long bytes = s.toLongLong(&ok);
+	if (!ok || bytes < 0)
+		return s;
+	long long kb = bytes / 1024;
+	long long mb = kb / 1024;
+	double gb = mb / 1024.0;
+	char buf[BUF_SIZE];
+	if (gb >= 1)
+		snprintf(buf, BUF_SIZE, "%.1f GB", gb);
+	else if (mb >= 1)
+		snprintf(buf, BUF_SIZE, "%lli MB", mb);
+	else if (kb >= 1)
+		snprintf(buf, BUF_SIZE, "%lli KB", kb);
+	else
+		snprintf(buf, BUF_SIZE, "%lli bytes", bytes);
+	return buf;
+}
+
+static QString present_bitrate(const QString &s)
+{
+	bool ok;
+	double bitrate = s.toDouble(&ok);
+	if (!ok || bitrate < 0)
+		return s;
+
+	char buf[BUF_SIZE];
+	snprintf(buf, BUF_SIZE, "%.2f kbit/s", bitrate);
+	return buf;
+}
+
+void Frontend::updateInfo()
+{
+	clearInfo();
+	QString input = ui.input->text();
+	if (input.isEmpty())
+		return;
+
+	QProcess proc;
+	proc.start(transcoder->ffmpeg2theora(), QStringList() << "--info" << input);
+	if (proc.waitForStarted()) {
+		char buf[BUF_SIZE] = "";
+		proc.waitForReadyRead();
+		while (proc.readLine(buf, BUF_SIZE) > 0) {
+			QStringList sl = untail(buf, ',').split(": ");
+			if (sl.size() < 2)
+				continue;
+			QString key = unquote(sl[0]);
+			QString value = unquote(sl[1]);
+#define FIELD(f, p) \
+	if (key == #f) \
+		ui. info_##f ->setText(present_##p(value));
+			FIELDS
+#undef FIELD
+			/*
+			char *key = strchr(buf, '"');
+			if (key == NULL)
+				continue;
+			for (char *i = buf + strlen(buf) - 1; i >= key; i--)
+				if (std::isspace(*i) || *i == ',')
+					*i = '\0';
+				else
+					break;
+					*/
+			proc.waitForReadyRead();
+		}
+		proc.waitForFinished();
+	} else
+		updateStatus("Info retrieval failed to start");
+}
+

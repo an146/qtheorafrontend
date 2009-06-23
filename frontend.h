@@ -46,6 +46,8 @@ protected slots:
 	void updateButtons();
 	void outputEdited();
 	void setDefaultOutput();
+	void clearInfo();
+	void updateInfo();
 
 private:
 	Ui::Dialog ui;
