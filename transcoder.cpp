@@ -32,7 +32,6 @@ Transcoder::Transcoder(Frontend *f)
 	: QThread(NULL), frontend(f)
 {
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
-	proc.setReadChannel(QProcess::StandardError);
 	proc.moveToThread(this);
 	connect(&proc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(procFinished(int, QProcess::ExitStatus)));
 	connect(&proc, SIGNAL(readyRead()), this, SLOT(readyRead()));
