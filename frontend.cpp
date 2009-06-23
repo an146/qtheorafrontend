@@ -2,6 +2,7 @@
  * frontend.cpp - frontend widget for invoking ffmpeg2theora
  * This file is part of QTheoraFrontend.
  *
+ * Copyright (C) 2009  Anton Novikov <an146@ya.ru>
  * Copyright (C) 2009  Denver Gingerich <denver@ossguy.com>
  *
  * The contents of this file can be redistributed and/or modified under the
