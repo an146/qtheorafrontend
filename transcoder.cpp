@@ -46,11 +46,12 @@ Transcoder::Transcoder(Frontend *f)
 		ffmpeg2theora_ = bundled;
 }
 
-void Transcoder::start(const QString &input, const QString &output)
+void Transcoder::start(const QString &input, const QString &output, const QStringList &ea)
 {
 	if (!isRunning()) {
 		input_filename = input;
 		output_filename = output;
+		extra_args = ea;
 		QThread::start();
 	}
 }
@@ -103,6 +104,7 @@ void Transcoder::run()
 	finish_message = "";
 	keep_output = true;
 	proc.start(ffmpeg2theora(), QStringList() << "--frontend"
+		<< extra_args
 		<< "--output" << output_filename
 		<< input_filename);
 

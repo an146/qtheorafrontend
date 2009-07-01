@@ -34,7 +34,7 @@ class Transcoder : public QThread
 
 public:
 	explicit Transcoder(Frontend *);
-	void start(const QString &input, const QString &output);
+	void start(const QString &input, const QString &output, const QStringList & = QStringList());
 	QString ffmpeg2theora() { return ffmpeg2theora_; }
 
 public slots:
@@ -61,6 +61,7 @@ private:
 	bool keep_output;
 	Frontend *frontend;
 	QString ffmpeg2theora_;
+	QStringList extra_args;
 };
 
 #endif // H_TRANSCODER

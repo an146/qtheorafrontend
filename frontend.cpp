@@ -93,7 +93,16 @@ void Frontend::closeEvent(QCloseEvent *event)
 
 void Frontend::transcode()
 {
-	transcoder->start(ui.input->text(), ui.output->text());
+	QStringList ea;
+	if (ui.partial->isChecked()) {
+		ea = ea << "--starttime" << QString::number(ui.partial_start->value());
+		ea = ea << "--endtime" << QString::number(ui.partial_end->value());
+	}
+	if (ui.sync->isChecked())
+		ea = ea << "--sync";
+	if (ui.no_skeleton->isChecked())
+		ea = ea << "--no-skeleton";
+	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
 bool Frontend::cancel()
