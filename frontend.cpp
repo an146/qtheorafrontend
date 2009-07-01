@@ -20,6 +20,8 @@
  *
  */
 
+#include <cmath> // std::floor
+#include <Qt>
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QDebug>
@@ -58,6 +60,9 @@ Frontend::Frontend(QWidget* parent)
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(statusUpdate(QString)),
 		this, SLOT(updateStatus(QString)));
+	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
+	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
+	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
 	updateButtons();
 }
 
@@ -128,6 +133,8 @@ void Frontend::updateButtons()
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
+	ui.partial->setEnabled(input_valid && duration > 0);
+	partialStateChanged();
 	if (exitting)
 		close();
 }
@@ -203,15 +210,11 @@ static QString present_as_is(const QString &s)
 static QString present_time(const QString &s)
 {
 	bool ok;
-	long long seconds = (long long)(s.toDouble(&ok) + 0.5);
-	if (!ok || seconds < 0)
-		return s;
-	long long minutes = seconds / 60;
-	long long hours = minutes / 60;
-
-	char buf[BUF_SIZE];
-	snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
-	return buf;
+	double dseconds = s.toDouble(&ok);
+	if (!ok)
+		return "";
+	else
+		return Frontend::time2string(dseconds);
 }
 
 static QString present_file_size(const QString &s)
@@ -250,6 +253,8 @@ static QString present_bitrate(const QString &s)
 void Frontend::updateInfo()
 {
 	clearInfo();
+	duration = -1;
+	ui.partial->setCheckState(Qt::Unchecked);
 	QString input = ui.input->text();
 	if (input.isEmpty())
 		return;
@@ -265,9 +270,22 @@ void Frontend::updateInfo()
 				continue;
 			QString key = unquote(sl[0]);
 			QString value = unquote(sl[1]);
+			if (key == "duration") {
+				bool ok;
+				duration = value.toDouble(&ok);
+				if (ok && duration >= 0) {
+					ui.partial_start->setMinimum(0);
+					ui.partial_start->setMaximum(duration);
+					ui.partial_start->setValue(0);
+					ui.partial_end->setMinimum(0);
+					ui.partial_end->setMaximum(duration);
+					ui.partial_end->setValue(duration);
+				} else
+					duration = -1;
+			}
 #define FIELD(f, p) \
-	if (key == #f) \
-		ui. info_##f ->setText(present_##p(value));
+			if (key == #f) \
+				ui. info_##f ->setText(present_##p(value));
 			FIELDS
 #undef FIELD
 			proc.waitForReadyRead();
@@ -278,5 +296,44 @@ void Frontend::updateInfo()
 		updateStatus("Info retrieval failed to start");
 		input_valid = false;
 	}
+}
+
+void Frontend::partialStateChanged()
+{
+	ui.partial_start->setEnabled(ui.partial->checkState());
+	ui.partial_end->setEnabled(ui.partial->checkState());
+}
+
+QString Frontend::time2string(double t, int decimals)
+{
+	if (t < 0)
+		return "";
+	double precision = 1.0;
+	for (int i = 0; i < decimals; i++)
+		precision /= 10;
+	t += precision / 2;
+
+	long long seconds = (long long)t;
+	long long minutes = seconds / 60;
+	long long hours = minutes / 60;
+
+	char buf[BUF_SIZE];
+	snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
+
+	double s = t - seconds;
+	for (int i = 0; i < decimals; i++)
+		s *= 10;
+	int x = (int)s;
+	while (x % 10 == 0 && decimals > 0) {
+		x /= 10;
+		decimals--;
+	}
+	if (decimals > 0) {
+		char fmt[BUF_SIZE], buf1[BUF_SIZE];
+		sprintf(fmt, ".%%.0%ii", decimals);
+		sprintf(buf1, fmt, x);
+		strcat(buf, buf1);
+	}
+	return buf;
 }
 

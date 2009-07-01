@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>634</width>
-    <height>366</height>
+    <height>377</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -85,6 +85,47 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="partial">
+       <property name="text">
+        <string>Partial Encode:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTimeSpinBox" name="partial_start" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTimeSpinBox" name="partial_end" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="sync">
+       <property name="text">
+        <string>Sync</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="no_skeleton">
+       <property name="text">
+        <string>No Skeleton</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -444,6 +485,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QTimeSpinBox</class>
+   <extends>QWidget</extends>
+   <header>qtimespinbox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="resources.qrc"/>
  </resources>

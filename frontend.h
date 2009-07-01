@@ -34,6 +34,8 @@ public:
 	Frontend(QWidget* parent = 0);
 	int cancel_ask(const QString &, bool);
 
+	static QString time2string(double, int decimals = 0);
+
 protected:
 	void closeEvent(QCloseEvent *);
 
@@ -48,6 +50,7 @@ protected slots:
 	void setDefaultOutput();
 	void clearInfo();
 	void updateInfo();
+	void partialStateChanged();
 
 private:
 	Ui::Dialog ui;
@@ -55,6 +58,7 @@ private:
 	bool output_auto;
 	bool exitting;
 	bool input_valid;
+	double duration;
 
 	Transcoder* transcoder;
 };
