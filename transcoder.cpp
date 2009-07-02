@@ -34,7 +34,8 @@ Transcoder::Transcoder(Frontend *f)
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
 	proc.moveToThread(this);
 	connect(&proc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(procFinished(int, QProcess::ExitStatus)));
-	connect(&proc, SIGNAL(readyRead()), this, SLOT(readyRead()));
+	connect(&proc, SIGNAL(readyReadStandardOutput()), this, SLOT(readyRead()));
+	connect(&proc, SIGNAL(readyReadStandardError()), this, SLOT(readyRead()));
 	connect(this, SIGNAL(terminate()), &proc, SLOT(kill()));
 
 	ffmpeg2theora_ = "ffmpeg2theora";
@@ -70,10 +71,14 @@ void Transcoder::stop(bool keep)
 
 void Transcoder::readyRead()
 {
+	QProcess::ProcessChannel channel[2] = {QProcess::StandardOutput, QProcess::StandardError};
 	char buf[BUF_SIZE] = "";
-	while (proc.canReadLine())
-		if (proc.readLine(buf, BUF_SIZE) > 0)
-			emit statusUpdate(QString(buf).trimmed());
+	for (int i = 0; i < 2; i++) {
+		proc.setReadChannel(channel[i]);
+		while (proc.canReadLine())
+			if (proc.readLine(buf, BUF_SIZE) > 0)
+				emit statusUpdate(QString(buf).trimmed());
+	}
 }
 
 void Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
