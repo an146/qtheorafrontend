@@ -269,6 +269,11 @@ void Frontend::updateInfo()
 	if (input.isEmpty())
 		return;
 
+	if (!QFileInfo(input).exists()) {
+		updateStatus("File does not exist");
+		return;
+	}
+	
 	QProcess proc;
 	proc.start(transcoder->ffmpeg2theora(), QStringList() << "--info" << input);
 	if (proc.waitForStarted()) {
