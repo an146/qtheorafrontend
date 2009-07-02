@@ -188,6 +188,7 @@ void Frontend::setDefaultOutput()
 
 void Frontend::clearInfo()
 {
+	updateStatus("");
 #define FIELD(f, p) ui. info_##f ->setText("");
 	FIELDS
 #undef FIELD
@@ -299,6 +300,10 @@ void Frontend::updateInfo()
 #undef FIELD
 			proc.waitForReadyRead();
 		}
+		proc.setReadChannel(QProcess::StandardError);
+		proc.waitForReadyRead();
+		while (proc.readLine(buf, BUF_SIZE) > 0)
+			updateStatus(buf);
 		proc.waitForFinished();
 		input_valid = proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit;
 	} else {
