@@ -51,7 +51,6 @@ Frontend::Frontend(QWidget* parent)
 	output_dlg.setDefaultSuffix("ogv");
 
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
-	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateInfo()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
@@ -137,6 +136,8 @@ void Frontend::outputSelected(const QString &s)
 
 void Frontend::updateButtons()
 {
+	updateInfo();
+
 	bool running = transcoder->isRunning();
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
 	bool can_start = !running && !missing_data && input_valid;
@@ -268,6 +269,7 @@ void Frontend::updateInfo()
 {
 	clearInfo();
 	duration = -1;
+	input_valid = false;
 	ui.partial->setCheckState(Qt::Unchecked);
 	QString input = ui.input->text();
 	if (input.isEmpty())
@@ -315,10 +317,8 @@ void Frontend::updateInfo()
 			updateStatus(buf);
 		proc.waitForFinished();
 		input_valid = proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit;
-	} else {
+	} else
 		updateStatus("Info retrieval failed to start");
-		input_valid = false;
-	}
 }
 
 void Frontend::partialStateChanged()
