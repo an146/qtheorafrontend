@@ -165,8 +165,9 @@ void Frontend::setDefaultOutput()
 
 	QFileInfo f(s);
 	QString name = f.completeBaseName() + ".ogv";
-	QString out = f.dir().filePath(name).remove(QRegExp("^./"));
-	ui.output->setText(out);
+	QString out = f.dir().filePath(name);
+	ui.output->setText(out.remove(QRegExp("^./")));
+	output_dlg.setDirectory(f.dir());
 	output_dlg.selectFile(out);
 }
 
