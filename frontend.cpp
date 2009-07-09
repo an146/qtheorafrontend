@@ -317,10 +317,14 @@ void Frontend::updateInfo()
 		}
 		proc.setReadChannel(QProcess::StandardError);
 		proc.waitForReadyRead();
+		/*
 		while (proc.readLine(buf, BUF_SIZE) > 0)
 			updateStatus(buf);
+		*/
 		proc.waitForFinished();
 		input_valid = proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit;
+		if (!input_valid)
+			updateStatus("Invalid input file");
 	} else
 		updateStatus("Info retrieval failed to start");
 }
