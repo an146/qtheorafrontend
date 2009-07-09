@@ -275,8 +275,12 @@ void Frontend::updateInfo()
 	if (input.isEmpty())
 		return;
 
-	if (!QFileInfo(input).exists()) {
+	QFileInfo fi(input);
+	if (!fi.exists()) {
 		updateStatus("File does not exist");
+		return;
+	} else if(!fi.isFile()) {
+		updateStatus("Not a file");
 		return;
 	}
 	
