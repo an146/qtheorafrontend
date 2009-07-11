@@ -47,7 +47,8 @@ Transcoder::Transcoder(Frontend *f)
 		ffmpeg2theora_ = bundled;
 }
 
-void Transcoder::start(const QString &input, const QString &output, const QStringList &ea)
+void
+Transcoder::start(const QString &input, const QString &output, const QStringList &ea)
 {
 	if (!isRunning()) {
 		input_filename = input;
@@ -57,7 +58,8 @@ void Transcoder::start(const QString &input, const QString &output, const QStrin
 	}
 }
 
-void Transcoder::stop(bool keep)
+void
+Transcoder::stop(bool keep)
 {
 	if (isRunning()) {
 		keep_output = keep;
@@ -69,7 +71,8 @@ void Transcoder::stop(bool keep)
 
 #define BUF_SIZE 256
 
-void Transcoder::readyRead()
+void
+Transcoder::readyRead()
 {
 	QProcess::ProcessChannel channel[2] = {QProcess::StandardOutput, QProcess::StandardError};
 	char buf[BUF_SIZE] = "";
@@ -81,7 +84,8 @@ void Transcoder::readyRead()
 	}
 }
 
-void Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
+void
+Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 {
 	if (finish_message.isEmpty()) {
 		/* the process died without our help */
@@ -104,7 +108,8 @@ void Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 	quit();
 }
 
-void Transcoder::run()
+void
+Transcoder::run()
 {
 	finish_message = "";
 	keep_output = true;
