@@ -132,6 +132,7 @@ void Frontend::inputSelected(const QString &s)
 void Frontend::outputSelected(const QString &s)
 {
 	ui.output->setText(s);
+	output_auto = false;
 }
 
 void Frontend::updateButtons()
