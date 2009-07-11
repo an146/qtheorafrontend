@@ -66,7 +66,8 @@ Frontend::Frontend(QWidget* parent)
 	updateButtons();
 }
 
-int Frontend::cancel_ask(const QString &reason, bool cancel_button)
+int
+Frontend::cancel_ask(const QString &reason, bool cancel_button)
 {
 	QMessageBox::StandardButtons buttons = QMessageBox::Save | QMessageBox::Discard;
 	if (cancel_button)
@@ -80,7 +81,8 @@ int Frontend::cancel_ask(const QString &reason, bool cancel_button)
 	);
 }
 
-void Frontend::closeEvent(QCloseEvent *event)
+void
+Frontend::closeEvent(QCloseEvent *event)
 {
 	if (!transcoder->isRunning())
 		event->accept();
@@ -91,7 +93,8 @@ void Frontend::closeEvent(QCloseEvent *event)
 	}
 }
 
-void Frontend::transcode()
+void
+Frontend::transcode()
 {
 	QStringList ea;
 	if (ui.partial->isChecked()) {
@@ -105,7 +108,8 @@ void Frontend::transcode()
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
-bool Frontend::cancel()
+bool
+Frontend::cancel()
 {
 	bool keep = false;
 
@@ -119,23 +123,27 @@ bool Frontend::cancel()
 	return false;
 }
 
-void Frontend::updateStatus(QString statusText)
+void
+Frontend::updateStatus(QString statusText)
 {
 	ui.status->setText(statusText);
 }
 
-void Frontend::inputSelected(const QString &s)
+void
+Frontend::inputSelected(const QString &s)
 {
 	ui.input->setText(s);
 }
 
-void Frontend::outputSelected(const QString &s)
+void
+Frontend::outputSelected(const QString &s)
 {
 	ui.output->setText(s);
 	output_auto = false;
 }
 
-void Frontend::updateButtons()
+void
+Frontend::updateButtons()
 {
 	updateInfo();
 
@@ -151,7 +159,8 @@ void Frontend::updateButtons()
 		close();
 }
 
-void Frontend::outputEdited()
+void
+Frontend::outputEdited()
 {
 	output_auto = ui.output->text().isEmpty();
 }
@@ -188,7 +197,8 @@ clear_filedialog_selection(QFileDialog *dlg)
 	dlg->setDirectory(dir);
 }
 
-void Frontend::setDefaultOutput()
+void
+Frontend::setDefaultOutput()
 {
 	if (!output_auto)
 		return;
@@ -226,7 +236,8 @@ void Frontend::setDefaultOutput()
 	FIELD(samplerate, as_is) \
 	FIELD(channels, as_is)
 
-void Frontend::clearInfo()
+void
+Frontend::clearInfo()
 {
 	updateStatus("");
 #define FIELD(f, p) ui. info_##f ->setText("");
@@ -236,7 +247,8 @@ void Frontend::clearInfo()
 
 #define BUF_SIZE 256
 
-static QString untail(const QString &s, char c)
+static QString
+untail(const QString &s, char c)
 {
 	QString ret = s.trimmed();
 	if (!ret.isEmpty() && ret[ret.size() - 1] == c)
@@ -244,7 +256,8 @@ static QString untail(const QString &s, char c)
 	return ret;
 }
 
-static QString unquote(const QString &s)
+static QString
+unquote(const QString &s)
 {
 	QString ret = s.trimmed();
 	if (!ret.isEmpty() && ret[0] == '"')
@@ -252,12 +265,14 @@ static QString unquote(const QString &s)
 	return untail(ret, '"');
 }
 
-static QString present_as_is(const QString &s)
+static QString
+present_as_is(const QString &s)
 {
 	return s;
 }
 
-static QString present_time(const QString &s)
+static QString
+present_time(const QString &s)
 {
 	bool ok;
 	double dseconds = s.toDouble(&ok);
@@ -267,10 +282,12 @@ static QString present_time(const QString &s)
 		return Frontend::time2string(dseconds);
 }
 
-static QString present_file_size(const QString &s)
+static QString
+present_file_size(const QString &s)
 {
 	bool ok;
-	long long bytes = s.toLongLong(&ok);
+	long long
+		bytes = s.toLongLong(&ok);
 	if (!ok || bytes < 0)
 		return s;
 	long long kb = bytes / 1024;
@@ -288,7 +305,8 @@ static QString present_file_size(const QString &s)
 	return buf;
 }
 
-static QString present_bitrate(const QString &s)
+static QString
+present_bitrate(const QString &s)
 {
 	bool ok;
 	double bitrate = s.toDouble(&ok);
@@ -300,7 +318,8 @@ static QString present_bitrate(const QString &s)
 	return buf;
 }
 
-void Frontend::updateInfo()
+void
+Frontend::updateInfo()
 {
 	clearInfo();
 	duration = -1;
@@ -364,13 +383,15 @@ void Frontend::updateInfo()
 		updateStatus("Info retrieval failed to start");
 }
 
-void Frontend::partialStateChanged()
+void
+Frontend::partialStateChanged()
 {
 	ui.partial_start->setEnabled(ui.partial->checkState());
 	ui.partial_end->setEnabled(ui.partial->checkState());
 }
 
-QString Frontend::time2string(double t, int decimals)
+QString
+Frontend::time2string(double t, int decimals)
 {
 	if (t < 0)
 		return "";
@@ -557,7 +578,8 @@ static const char *extensions[] = {
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
-static QString input_filter()
+static QString
+input_filter()
 {
 	QString ext_list;
 	for (int i = 0; i < LENGTH(extensions); i++) {
