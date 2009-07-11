@@ -155,6 +155,38 @@ void Frontend::outputEdited()
 	output_auto = ui.output->text().isEmpty();
 }
 
+/* returns a QDir that != dir */
+
+static QDir
+another_dir(const QDir &dir)
+{
+#define TRY(d) if (d != dir) return d
+	TRY(QDir::root());
+	TRY(QDir::home());
+	TRY(QDir::temp());
+	
+	// well, shit happens
+	QDir d = dir;
+	d.cdUp();
+	return dir;
+}
+
+/* hack: in some versions of Qt (4.5.1 at least)
+ * when an existing file is selected in QFileDialog
+ * and you select a non-existing file, selection
+ * stays on the previous one, though filename in
+ * text box is set correctly. So we need to reset
+ * the selection before we select another file
+ */
+
+static void
+clear_filedialog_selection(QFileDialog *dlg)
+{
+	QDir dir = dlg->directory();
+	dlg->setDirectory(another_dir(dir));
+	dlg->setDirectory(dir);
+}
+
 void Frontend::setDefaultOutput()
 {
 	if (!output_auto)
@@ -170,7 +202,8 @@ void Frontend::setDefaultOutput()
 	QString out = has_path ? f.dir().filePath(name) : name;
 	ui.output->setText(out);
 	output_dlg.setDirectory(f.dir());
-	output_dlg.selectFile(out);
+	clear_filedialog_selection(&output_dlg);
+	output_dlg.selectFile(name);
 }
 
 #define FIELDS \
