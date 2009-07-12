@@ -20,6 +20,7 @@
  *
  */
 
+#include <stdexcept>
 #include <cmath> // std::floor
 #include <Qt>
 #include <QMessageBox>
@@ -63,6 +64,8 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
 	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
 	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
+	connect(ui.audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
+	connect(ui.video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 	updateButtons();
 }
 
@@ -145,7 +148,7 @@ Frontend::outputSelected(const QString &s)
 void
 Frontend::updateButtons()
 {
-	updateInfo();
+	retrieveInfo();
 
 	bool running = transcoder->isRunning();
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
@@ -153,7 +156,7 @@ Frontend::updateButtons()
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
-	ui.partial->setEnabled(input_valid && duration > 0);
+	ui.partial->setEnabled(input_valid && finfo.duration > 0);
 	partialStateChanged();
 	if (exitting)
 		close();
@@ -218,52 +221,25 @@ Frontend::setDefaultOutput()
 }
 
 #define FIELDS \
-	FIELD(duration, time) \
-	FIELD(bitrate, bitrate) \
-	FIELD(size, file_size) \
+	FILE_FIELD(duration, time) \
+	FILE_FIELD(bitrate, bitrate) \
+	FILE_FIELD(size, file_size) \
 \
-	FIELD(video_codec, as_is) \
-	FIELD(video_bitrate, bitrate) \
-	FIELD(pixel_format, as_is) \
-	FIELD(height, as_is) \
-	FIELD(width, as_is) \
-	FIELD(framerate, as_is) \
-	FIELD(pixel_aspect_ratio, as_is) \
-	FIELD(display_aspect_ratio, as_is) \
+	VSTREAM_FIELD(video_codec, as_is) \
+	VSTREAM_FIELD(video_bitrate, bitrate) \
+	VSTREAM_FIELD(pixel_format, as_is) \
+	VSTREAM_FIELD(height, int) \
+	VSTREAM_FIELD(width, int) \
+	VSTREAM_FIELD(framerate, as_is) \
+	VSTREAM_FIELD(pixel_aspect_ratio, as_is) \
+	VSTREAM_FIELD(display_aspect_ratio, as_is) \
 \
-	FIELD(audio_codec, as_is) \
-	FIELD(audio_bitrate, bitrate) \
-	FIELD(samplerate, as_is) \
-	FIELD(channels, as_is)
-
-void
-Frontend::clearInfo()
-{
-	updateStatus("");
-#define FIELD(f, p) ui. info_##f ->setText("");
-	FIELDS
-#undef FIELD
-}
+	ASTREAM_FIELD(audio_codec, as_is) \
+	ASTREAM_FIELD(audio_bitrate, bitrate) \
+	ASTREAM_FIELD(samplerate, int) \
+	ASTREAM_FIELD(channels, int)
 
 #define BUF_SIZE 256
-
-static QString
-untail(const QString &s, char c)
-{
-	QString ret = s.trimmed();
-	if (!ret.isEmpty() && ret[ret.size() - 1] == c)
-		ret.chop(1);
-	return ret;
-}
-
-static QString
-unquote(const QString &s)
-{
-	QString ret = s.trimmed();
-	if (!ret.isEmpty() && ret[0] == '"')
-		ret.remove(0, 1);
-	return untail(ret, '"');
-}
 
 static QString
 present_as_is(const QString &s)
@@ -272,24 +248,16 @@ present_as_is(const QString &s)
 }
 
 static QString
-present_time(const QString &s)
+present_time(double t)
 {
-	bool ok;
-	double dseconds = s.toDouble(&ok);
-	if (!ok)
-		return "";
-	else
-		return Frontend::time2string(dseconds);
+	return Frontend::time2string(t);
 }
 
 static QString
-present_file_size(const QString &s)
+present_file_size(long long bytes)
 {
-	bool ok;
-	long long
-		bytes = s.toLongLong(&ok);
-	if (!ok || bytes < 0)
-		return s;
+	if (bytes < 0)
+		return "";
 	long long kb = bytes / 1024;
 	long long mb = kb / 1024;
 	double gb = mb / 1024.0;
@@ -306,81 +274,86 @@ present_file_size(const QString &s)
 }
 
 static QString
-present_bitrate(const QString &s)
+present_bitrate(double bitrate)
 {
-	bool ok;
-	double bitrate = s.toDouble(&ok);
-	if (!ok || bitrate < 0)
-		return s;
+	if (bitrate < 0)
+		return "";
 
 	char buf[BUF_SIZE];
 	snprintf(buf, BUF_SIZE, "%.2f kbit/s", bitrate);
 	return buf;
 }
 
-void
-Frontend::updateInfo()
+static QString
+present_int(int n)
 {
-	clearInfo();
-	duration = -1;
+	return QString::number(n);
+}
+
+template <class Info>
+static void
+get_streams(QComboBox *cb, const QList<Info> &list)
+{
+	cb->clear();
+	cb->setEnabled(!list.empty());
+	for (typename QList<Info>::const_iterator i = list.begin(); i != list.end(); ++i)
+		cb->addItem(QString::number(i->id));
+	cb->setCurrentIndex(0);
+}
+
+template <class Info>
+static const Info *
+stream(const QComboBox *cb, const QList<Info> &list)
+{
+	int i = cb->currentIndex();
+	if (i < 0 || i >= list.size())
+		return NULL;
+	return &list[i];
+}
+
+void
+Frontend::retrieveInfo()
+{
 	input_valid = false;
 	ui.partial->setCheckState(Qt::Unchecked);
 	QString input = ui.input->text();
 	if (input.isEmpty())
 		return;
 
-	QFileInfo fi(input);
-	if (!fi.exists()) {
-		updateStatus("File does not exist");
-		return;
-	} else if(!fi.isFile()) {
-		updateStatus("Not a file");
-		return;
+	try {
+		QFileInfo fi(input);
+		if (!fi.exists())
+			throw std::runtime_error("File does not exist");
+		else if(!fi.isFile())
+			throw std::runtime_error("Not a file");
+		finfo.retrieve(input);
+
+		ui.partial_start->setMinimum(0);
+		ui.partial_start->setMaximum(finfo.duration);
+		ui.partial_start->setValue(0);
+		ui.partial_end->setMinimum(0);
+		ui.partial_end->setMaximum(finfo.duration);
+		ui.partial_end->setValue(finfo.duration);
+
+		get_streams(ui.audio_stream, finfo.audio_streams);
+		get_streams(ui.video_stream, finfo.video_streams);
+
+		input_valid = true;
+	} catch (std::exception &x) {
+		updateStatus(x.what());
 	}
-	
-	QProcess proc;
-	proc.start(transcoder->ffmpeg2theora(), QStringList() << "--info" << input);
-	if (proc.waitForStarted()) {
-		char buf[BUF_SIZE] = "";
-		proc.waitForReadyRead();
-		while (proc.readLine(buf, BUF_SIZE) > 0) {
-			QStringList sl = untail(buf, ',').split(": ");
-			if (sl.size() < 2)
-				continue;
-			QString key = unquote(sl[0]);
-			QString value = unquote(sl[1]);
-			if (key == "duration") {
-				bool ok;
-				duration = value.toDouble(&ok);
-				if (ok && duration >= 0) {
-					ui.partial_start->setMinimum(0);
-					ui.partial_start->setMaximum(duration);
-					ui.partial_start->setValue(0);
-					ui.partial_end->setMinimum(0);
-					ui.partial_end->setMaximum(duration);
-					ui.partial_end->setValue(duration);
-				} else
-					duration = -1;
-			}
-#define FIELD(f, p) \
-			if (key == #f) \
-				ui. info_##f ->setText(present_##p(value));
-			FIELDS
+	updateInfo();
+}
+
+void
+Frontend::updateInfo()
+{
+#define FIELD(f, t, o) ui. info_##f ->setText(o ? present_##t(o->f) : QString(""));
+#define FILE_FIELD(f, c) FIELD(f, c, (&finfo))
+#define ASTREAM_FIELD(f, c) FIELD(f, c, stream(ui.audio_stream, finfo.audio_streams))
+#define VSTREAM_FIELD(f, c) FIELD(f, c, stream(ui.video_stream, finfo.video_streams))
+		FIELDS
 #undef FIELD
-			proc.waitForReadyRead();
-		}
-		proc.setReadChannel(QProcess::StandardError);
-		proc.waitForReadyRead();
-		/*
-		while (proc.readLine(buf, BUF_SIZE) > 0)
-			updateStatus(buf);
-		*/
-		proc.waitForFinished();
-		input_valid = proc.exitCode() == 0 && proc.exitStatus() == QProcess::NormalExit;
-		if (!input_valid)
-			updateStatus("Invalid input file");
-	} else
-		updateStatus("Info retrieval failed to start");
 }
 
 void

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>634</width>
-    <height>377</height>
+    <width>727</width>
+    <height>395</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -232,13 +232,6 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>Video Codec:</string>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="1">
         <widget class="QLabel" name="info_video_codec">
          <property name="frameShape">
@@ -261,6 +254,26 @@
        </item>
        <item row="2" column="3">
         <widget class="QLabel" name="info_height">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Sunken</enum>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4" colspan="2">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>Pixel Aspect Ratio:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="6">
+        <widget class="QLabel" name="info_pixel_aspect_ratio">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -319,6 +332,19 @@
          </property>
         </widget>
        </item>
+       <item row="3" column="6">
+        <widget class="QLabel" name="info_display_aspect_ratio">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Sunken</enum>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item row="4" column="0">
         <widget class="QLabel" name="label_19">
          <property name="text">
@@ -358,6 +384,9 @@
           <string/>
          </property>
         </widget>
+       </item>
+       <item row="4" column="6">
+        <widget class="QComboBox" name="video_stream"/>
        </item>
        <item row="5" column="0" colspan="7">
         <widget class="Line" name="line_2">
@@ -406,6 +435,9 @@
          </property>
         </widget>
        </item>
+       <item row="6" column="6">
+        <widget class="QComboBox" name="audio_stream"/>
+       </item>
        <item row="7" column="0">
         <widget class="QLabel" name="label_27">
          <property name="text">
@@ -446,36 +478,24 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="4" colspan="2">
-        <widget class="QLabel" name="label_11">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_7">
          <property name="text">
-          <string>Pixel Aspect Ratio:</string>
+          <string>Video Codec:</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="6">
-        <widget class="QLabel" name="info_pixel_aspect_ratio">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Sunken</enum>
-         </property>
+       <item row="4" column="5">
+        <widget class="QLabel" name="label">
          <property name="text">
-          <string/>
+          <string>Video Stream:</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="6">
-        <widget class="QLabel" name="info_display_aspect_ratio">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Sunken</enum>
-         </property>
+       <item row="6" column="5">
+        <widget class="QLabel" name="label_4">
          <property name="text">
-          <string/>
+          <string>Audio Stream:</string>
          </property>
         </widget>
        </item>

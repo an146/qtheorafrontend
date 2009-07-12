@@ -37,14 +37,6 @@ Transcoder::Transcoder(Frontend *f)
 	connect(&proc, SIGNAL(readyReadStandardOutput()), this, SLOT(readyRead()));
 	connect(&proc, SIGNAL(readyReadStandardError()), this, SLOT(readyRead()));
 	connect(this, SIGNAL(terminate()), &proc, SLOT(kill()));
-
-	ffmpeg2theora_ = "ffmpeg2theora";
-	QString suffix = QFileInfo(QCoreApplication::applicationFilePath()).suffix();
-	if (!suffix.isEmpty())
-		ffmpeg2theora_ += "." + suffix;
-	QString bundled = QDir(QCoreApplication::applicationDirPath()).filePath(ffmpeg2theora_);
-	if (QFile(bundled).exists())
-		ffmpeg2theora_ = bundled;
 }
 
 void
@@ -67,6 +59,22 @@ Transcoder::stop(bool keep)
 		                        QString("Encoding cancelled. Partial result deleted");
 		emit terminate();
 	}
+}
+
+QString
+Transcoder::ffmpeg2theora()
+{
+	static QString ffmpeg2theora_;
+	if (ffmpeg2theora_.isEmpty()) {
+		ffmpeg2theora_ = "ffmpeg2theora";
+		QString suffix = QFileInfo(QCoreApplication::applicationFilePath()).suffix();
+		if (!suffix.isEmpty())
+			ffmpeg2theora_ += "." + suffix;
+		QString bundled = QDir(QCoreApplication::applicationDirPath()).filePath(ffmpeg2theora_);
+		if (QFile(bundled).exists())
+			ffmpeg2theora_ = bundled;
+	}
+	return ffmpeg2theora_;
 }
 
 #define BUF_SIZE 256

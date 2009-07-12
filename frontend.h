@@ -24,6 +24,7 @@
 
 #include <QFileDialog>
 #include "transcoder.h"
+#include "fileinfo.h"
 #include "ui_dialog.h"
 
 class Frontend : public QDialog
@@ -48,7 +49,7 @@ protected slots:
 	void updateButtons();
 	void outputEdited();
 	void setDefaultOutput();
-	void clearInfo();
+	void retrieveInfo();
 	void updateInfo();
 	void partialStateChanged();
 
@@ -58,7 +59,7 @@ private:
 	bool output_auto;
 	bool exitting;
 	bool input_valid;
-	double duration;
+	FileInfo finfo;
 
 	Transcoder* transcoder;
 };
