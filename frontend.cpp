@@ -56,7 +56,6 @@ Frontend::Frontend(QWidget* parent)
 
 	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
 	connect(ui.output_select, SIGNAL(released()), &output_dlg, SLOT(exec()));
-	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(retrieveInfo()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
@@ -65,11 +64,12 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
 	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
 	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
+	connect(ui.no_skeleton, SIGNAL(toggled(bool)), this, SLOT(noSkeleton(bool)));
 
 	connect(ui.info_audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 	connect(ui.info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 
-	connect(ui.audio_encode, SIGNAL(stateChanged(int)), this, SLOT(updateAudio()));
+	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
 	connect(ui.audio_const_quality, SIGNAL(toggled(bool)), ui.audio_quality, SLOT(setEnabled(bool)));
 	connect(ui.audio_const_bitrate, SIGNAL(toggled(bool)), ui.audio_bitrate, SLOT(setEnabled(bool)));
 	retrieveInfo();
@@ -183,6 +183,8 @@ void
 Frontend::outputEdited()
 {
 	output_auto = ui.output->text().isEmpty();
+	if (ui.output->text().endsWith(".ogg"))
+		ui.no_skeleton->setChecked(true);
 }
 
 /* returns a QDir that != dir */
@@ -228,7 +230,10 @@ Frontend::setDefaultOutput()
 		return;
 
 	QFileInfo f(s);
-	QString name = f.completeBaseName() + ".ogv";
+	QString ext = finfo.video_streams.empty() ?
+		(ui.no_skeleton->isChecked() ? "ogg" : "oga") :
+		"ogv";
+	QString name = f.completeBaseName() + "." + ext;
 	bool has_path = f.fileName() != f.filePath();
 	QString out = has_path ? f.dir().filePath(name) : name;
 	ui.output->setText(out);
@@ -364,6 +369,8 @@ Frontend::retrieveInfo()
 	get_streams(ui.info_audio_stream, finfo.audio_streams);
 	get_streams(ui.info_video_stream, finfo.video_streams);
 	get_streams(ui.audio_stream, finfo.audio_streams);
+
+	setDefaultOutput();
 	updateButtons();
 	updateInfo();
 	updateAudio();
@@ -636,4 +643,16 @@ input_filter()
 		ext_list += extensions[i];
 	}
 	return QString("Video and Audio files (") + ext_list + ");;Any files (*)";
+}
+
+void
+Frontend::noSkeleton(bool checked)
+{
+	if (checked && finfo.video_streams.empty() /* !ui.video_encode->isChecked() */) {
+		QString out = ui.output->text();
+		if (out.endsWith(".oga")) {
+			out.chop(4);
+			ui.output->setText(out + ".ogg");
+		}
+	}
 }

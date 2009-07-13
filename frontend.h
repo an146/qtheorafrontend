@@ -53,6 +53,7 @@ protected slots:
 	void updateInfo();
 	void updateAudio();
 	void partialStateChanged();
+	void noSkeleton(bool);
 
 private:
 	Ui::Dialog ui;
