@@ -39,33 +39,35 @@ Frontend::Frontend(QWidget* parent)
 	input_valid(false)
 {
 	ui.setupUi(this);
-	input_dlg.setOption(QFileDialog::HideNameFilterDetails);
 	transcoder = new Transcoder(this);
+	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(statusUpdate(QString)), this, SLOT(updateStatus(QString)));
 
-	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
-	connect(ui.output_select, SIGNAL(released()), &output_dlg, SLOT(exec()));
-	connect(&input_dlg, SIGNAL(fileSelected(QString)), this, SLOT(inputSelected(QString)));
-	connect(&output_dlg, SIGNAL(fileSelected(QString)), this, SLOT(outputSelected(QString)));
+	input_dlg.setOption(QFileDialog::HideNameFilterDetails);
 	input_dlg.setFileMode(QFileDialog::ExistingFile);
 	output_dlg.setAcceptMode(QFileDialog::AcceptSave);
 	output_dlg.setFileMode(QFileDialog::AnyFile);
 	output_dlg.setDefaultSuffix("ogv");
+	connect(&input_dlg, SIGNAL(fileSelected(QString)), this, SLOT(inputSelected(QString)));
+	connect(&output_dlg, SIGNAL(fileSelected(QString)), this, SLOT(outputSelected(QString)));
 
+	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
+	connect(ui.output_select, SIGNAL(released()), &output_dlg, SLOT(exec()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(ui.cancel, SIGNAL(released()), this, SLOT(cancel()));
-	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
-	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
-	connect(transcoder, SIGNAL(statusUpdate(QString)),
-		this, SLOT(updateStatus(QString)));
 	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
 	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
 	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
+
 	connect(ui.info_audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 	connect(ui.info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
+
+	connect(ui.audio_encode, SIGNAL(stateChanged(int)), this, SLOT(updateAudio()));
 	updateButtons();
 }
 
@@ -341,9 +343,14 @@ Frontend::retrieveInfo()
 	} catch (std::exception &x) {
 		updateStatus(x.what());
 	}
+	ui.audio_encode->setEnabled(!finfo.audio_streams.empty());
+	ui.audio_encode->setChecked(!finfo.audio_streams.empty());
+
 	get_streams(ui.info_audio_stream, finfo.audio_streams);
 	get_streams(ui.info_video_stream, finfo.video_streams);
+	get_streams(ui.audio_stream, finfo.audio_streams);
 	updateInfo();
+	updateAudio();
 }
 
 void
@@ -355,6 +362,17 @@ Frontend::updateInfo()
 #define VSTREAM_FIELD(f, c) FIELD(f, info_video_##f, c, stream(ui.info_video_stream, finfo.video_streams))
 		FIELDS
 #undef FIELD
+}
+
+void
+Frontend::updateAudio()
+{
+	int c = ui.audio_options_layout->count();
+	for (int i = 0; i < c; i++) {
+		QWidget *w = ui.audio_options_layout->itemAt(i)->widget();
+		if (w != 0)
+			w->setEnabled(ui.audio_encode->isChecked());
+	}
 }
 
 void

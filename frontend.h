@@ -51,6 +51,7 @@ protected slots:
 	void setDefaultOutput();
 	void retrieveInfo();
 	void updateInfo();
+	void updateAudio();
 	void partialStateChanged();
 
 private:
