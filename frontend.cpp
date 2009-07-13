@@ -28,6 +28,8 @@
 #include <QDebug>
 #include "frontend.h"
 
+#define LENGTH(x) int(sizeof(x) / sizeof(*x))
+
 static QString input_filter();
 
 Frontend::Frontend(QWidget* parent)
@@ -55,7 +57,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
 	connect(ui.output_select, SIGNAL(released()), &output_dlg, SLOT(exec()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(setDefaultOutput()));
-	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
+	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(retrieveInfo()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(updateButtons()));
 	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
@@ -68,7 +70,9 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 
 	connect(ui.audio_encode, SIGNAL(stateChanged(int)), this, SLOT(updateAudio()));
-	updateButtons();
+	connect(ui.audio_const_quality, SIGNAL(toggled(bool)), ui.audio_quality, SLOT(setEnabled(bool)));
+	connect(ui.audio_const_bitrate, SIGNAL(toggled(bool)), ui.audio_bitrate, SLOT(setEnabled(bool)));
+	retrieveInfo();
 }
 
 int
@@ -102,6 +106,7 @@ void
 Frontend::transcode()
 {
 	QStringList ea;
+
 	if (ui.partial->isChecked()) {
 		ea = ea << "--starttime" << QString::number(ui.partial_start->value());
 		ea = ea << "--endtime" << QString::number(ui.partial_end->value());
@@ -110,6 +115,18 @@ Frontend::transcode()
 		ea = ea << "--sync";
 	if (ui.no_skeleton->isChecked())
 		ea = ea << "--no-skeleton";
+
+	if (ui.audio_encode->isChecked()) {
+		ea = ea << "--audiostream" << ui.audio_stream->currentText();
+		ea = ea << "--channels" << ui.audio_channels->currentText();
+		ea = ea << "--samplerate" << ui.audio_samplerate->currentText();
+		if (ui.audio_const_quality->isChecked())
+			ea = ea << "--audioquality" << QString::number(ui.audio_quality->value());
+		else if (ui.audio_const_bitrate->isChecked())
+			ea = ea << "--audiobitrate" << ui.audio_bitrate->currentText();
+	} else {
+		ea = ea << "--noaudio";
+	}
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
@@ -150,8 +167,6 @@ Frontend::outputSelected(const QString &s)
 void
 Frontend::updateButtons()
 {
-	retrieveInfo();
-
 	bool running = transcoder->isRunning();
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
 	bool can_start = !running && !missing_data && input_valid;
@@ -349,6 +364,7 @@ Frontend::retrieveInfo()
 	get_streams(ui.info_audio_stream, finfo.audio_streams);
 	get_streams(ui.info_video_stream, finfo.video_streams);
 	get_streams(ui.audio_stream, finfo.audio_streams);
+	updateButtons();
 	updateInfo();
 	updateAudio();
 }
@@ -364,14 +380,57 @@ Frontend::updateInfo()
 #undef FIELD
 }
 
+static const int samplerates[] = {
+	22050,
+	24000,
+	32000,
+	44100,
+	48000
+};
+
+static const int bitrates[] = {
+	32,
+	40,
+	48,
+	56,
+	64,
+	80,
+	96,
+	112,
+	128,
+	160
+};
+
+#define select_last(c) c->setCurrentIndex(c->count() - 1)
+
 void
 Frontend::updateAudio()
 {
 	int c = ui.audio_options_layout->count();
-	for (int i = 0; i < c; i++) {
+	int encode = ui.audio_encode->isChecked();
+	int i;
+
+	for (i = 0; i < c; i++) {
 		QWidget *w = ui.audio_options_layout->itemAt(i)->widget();
 		if (w != 0)
-			w->setEnabled(ui.audio_encode->isChecked());
+			w->setEnabled(encode);
+	}
+	ui.audio_channels->clear();
+	ui.audio_samplerate->clear();
+	ui.audio_bitrate->clear();
+	const AudioStreamInfo *s = stream(ui.audio_stream, finfo.audio_streams);
+	if (s != NULL) {
+		for (i = 0; i < s->channels; i++)
+			ui.audio_channels->addItem(QString::number(i + 1));
+		for (i = 0; i < LENGTH(samplerates); i++)
+			if (samplerates[i] <= s->samplerate)
+				ui.audio_samplerate->addItem(QString::number(samplerates[i]));
+		for (i = 0; i < LENGTH(bitrates); i++)
+			if (bitrates[i] <= s->bitrate)
+				ui.audio_bitrate->addItem(QString::number(bitrates[i]));
+		select_last(ui.audio_channels);
+		select_last(ui.audio_samplerate);
+		select_last(ui.audio_bitrate);
 	}
 }
 
@@ -567,8 +626,6 @@ static const char *extensions[] = {
 
 	"avi",
 };
-
-#define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
 static QString
 input_filter()
