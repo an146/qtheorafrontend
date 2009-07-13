@@ -28,6 +28,8 @@
 struct StreamInfo
 {
 	int id;
+
+	StreamInfo(): id(-1) { }
 };
 
 struct AudioStreamInfo : public StreamInfo

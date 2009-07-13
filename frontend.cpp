@@ -315,6 +315,7 @@ void
 Frontend::retrieveInfo()
 {
 	input_valid = false;
+	finfo = FileInfo();
 	ui.partial->setCheckState(Qt::Unchecked);
 	QString input = ui.input->text();
 	if (input.isEmpty())
@@ -335,20 +336,20 @@ Frontend::retrieveInfo()
 		ui.partial_end->setMaximum(finfo.duration);
 		ui.partial_end->setValue(finfo.duration);
 
-		get_streams(ui.audio_stream, finfo.audio_streams);
-		get_streams(ui.video_stream, finfo.video_streams);
-
 		input_valid = true;
+		updateStatus("");
 	} catch (std::exception &x) {
 		updateStatus(x.what());
 	}
+	get_streams(ui.audio_stream, finfo.audio_streams);
+	get_streams(ui.video_stream, finfo.video_streams);
 	updateInfo();
 }
 
 void
 Frontend::updateInfo()
 {
-#define FIELD(f, t, o) ui. info_##f ->setText(o ? present_##t(o->f) : QString(""));
+#define FIELD(f, t, o) ui. info_##f ->setText((o != NULL && input_valid) ? present_##t(o->f) : QString(""));
 #define FILE_FIELD(f, c) FIELD(f, c, (&finfo))
 #define ASTREAM_FIELD(f, c) FIELD(f, c, stream(ui.audio_stream, finfo.audio_streams))
 #define VSTREAM_FIELD(f, c) FIELD(f, c, stream(ui.video_stream, finfo.video_streams))
