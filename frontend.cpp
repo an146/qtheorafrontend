@@ -318,12 +318,12 @@ Frontend::retrieveInfo()
 	finfo = FileInfo();
 	ui.partial->setCheckState(Qt::Unchecked);
 	QString input = ui.input->text();
-	if (input.isEmpty())
-		return;
 
 	try {
 		QFileInfo fi(input);
-		if (!fi.exists())
+		if (input.isEmpty())
+			throw std::runtime_error("");
+		else if (!fi.exists())
 			throw std::runtime_error("File does not exist");
 		else if(!fi.isFile())
 			throw std::runtime_error("Not a file");
