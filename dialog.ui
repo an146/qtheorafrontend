@@ -253,7 +253,7 @@
         </widget>
        </item>
        <item row="2" column="3">
-        <widget class="QLabel" name="info_height">
+        <widget class="QLabel" name="info_video_height">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -273,7 +273,7 @@
         </widget>
        </item>
        <item row="2" column="6">
-        <widget class="QLabel" name="info_pixel_aspect_ratio">
+        <widget class="QLabel" name="info_video_pixel_aspect_ratio">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -313,7 +313,7 @@
         </widget>
        </item>
        <item row="3" column="3">
-        <widget class="QLabel" name="info_width">
+        <widget class="QLabel" name="info_video_width">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -333,7 +333,7 @@
         </widget>
        </item>
        <item row="3" column="6">
-        <widget class="QLabel" name="info_display_aspect_ratio">
+        <widget class="QLabel" name="info_video_display_aspect_ratio">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -353,7 +353,7 @@
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QLabel" name="info_pixel_format">
+        <widget class="QLabel" name="info_video_pixel_format">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -373,7 +373,7 @@
         </widget>
        </item>
        <item row="4" column="3">
-        <widget class="QLabel" name="info_framerate">
+        <widget class="QLabel" name="info_video_framerate">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -423,7 +423,7 @@
         </widget>
        </item>
        <item row="6" column="3">
-        <widget class="QLabel" name="info_samplerate">
+        <widget class="QLabel" name="info_audio_samplerate">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -466,7 +466,7 @@
         </widget>
        </item>
        <item row="7" column="3">
-        <widget class="QLabel" name="info_channels">
+        <widget class="QLabel" name="info_audio_channels">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>

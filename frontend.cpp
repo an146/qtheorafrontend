@@ -225,8 +225,8 @@ Frontend::setDefaultOutput()
 	FILE_FIELD(bitrate, bitrate) \
 	FILE_FIELD(size, file_size) \
 \
-	VSTREAM_FIELD(video_codec, as_is) \
-	VSTREAM_FIELD(video_bitrate, bitrate) \
+	VSTREAM_FIELD(codec, as_is) \
+	VSTREAM_FIELD(bitrate, bitrate) \
 	VSTREAM_FIELD(pixel_format, as_is) \
 	VSTREAM_FIELD(height, int) \
 	VSTREAM_FIELD(width, int) \
@@ -234,8 +234,8 @@ Frontend::setDefaultOutput()
 	VSTREAM_FIELD(pixel_aspect_ratio, as_is) \
 	VSTREAM_FIELD(display_aspect_ratio, as_is) \
 \
-	ASTREAM_FIELD(audio_codec, as_is) \
-	ASTREAM_FIELD(audio_bitrate, bitrate) \
+	ASTREAM_FIELD(codec, as_is) \
+	ASTREAM_FIELD(bitrate, bitrate) \
 	ASTREAM_FIELD(samplerate, int) \
 	ASTREAM_FIELD(channels, int)
 
@@ -349,10 +349,10 @@ Frontend::retrieveInfo()
 void
 Frontend::updateInfo()
 {
-#define FIELD(f, t, o) ui. info_##f ->setText((o != NULL && input_valid) ? present_##t(o->f) : QString(""));
-#define FILE_FIELD(f, c) FIELD(f, c, (&finfo))
-#define ASTREAM_FIELD(f, c) FIELD(f, c, stream(ui.info_audio_stream, finfo.audio_streams))
-#define VSTREAM_FIELD(f, c) FIELD(f, c, stream(ui.info_video_stream, finfo.video_streams))
+#define FIELD(f, uif, t, o) ui. uif ->setText((o != NULL && input_valid) ? present_##t(o->f) : QString(""));
+#define FILE_FIELD(f, c) FIELD(f, info_##f, c, (&finfo))
+#define ASTREAM_FIELD(f, c) FIELD(f, info_audio_##f, c, stream(ui.info_audio_stream, finfo.audio_streams))
+#define VSTREAM_FIELD(f, c) FIELD(f, info_video_##f, c, stream(ui.info_video_stream, finfo.video_streams))
 		FIELDS
 #undef FIELD
 }

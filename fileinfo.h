@@ -27,6 +27,8 @@
 
 struct StreamInfo
 {
+	QString codec;
+	double bitrate;
 	int id;
 
 	StreamInfo(): id(-1) { }
@@ -34,18 +36,14 @@ struct StreamInfo
 
 struct AudioStreamInfo : public StreamInfo
 {
-	QString audio_codec;
-	double audio_bitrate;
 	int samplerate;
 	int channels;
 
-	AudioStreamInfo(): audio_bitrate(-1), samplerate(-1), channels(-1) { }
+	AudioStreamInfo(): samplerate(-1), channels(-1) { }
 };
 
 struct VideoStreamInfo : public StreamInfo
 {
-	QString video_codec;
-	double video_bitrate;
 	QString pixel_format;
 	int height;
 	int width;
@@ -53,7 +51,7 @@ struct VideoStreamInfo : public StreamInfo
 	QString pixel_aspect_ratio;
 	QString display_aspect_ratio;
 
-	VideoStreamInfo(): video_bitrate(-1), height(-1), width(-1) { }
+	VideoStreamInfo(): height(-1), width(-1) { }
 };
 
 struct FileInfo

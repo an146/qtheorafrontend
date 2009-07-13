@@ -8,10 +8,10 @@
 	FILE_FIELD(bitrate, .toDouble()) \
 	FILE_FIELD(size, .toLongLong()) \
 \
+	STREAM_FIELD(codec, ) \
+	STREAM_FIELD(bitrate, .toDouble()) \
 	STREAM_FIELD(id, .toInt()) \
 \
-	VSTREAM_FIELD(video_codec, ) \
-	VSTREAM_FIELD(video_bitrate, .toDouble()) \
 	VSTREAM_FIELD(pixel_format, ) \
 	VSTREAM_FIELD(height, .toInt()) \
 	VSTREAM_FIELD(width, .toInt()) \
@@ -19,8 +19,6 @@
 	VSTREAM_FIELD(pixel_aspect_ratio, ) \
 	VSTREAM_FIELD(display_aspect_ratio, ) \
 \
-	ASTREAM_FIELD(audio_codec, ) \
-	ASTREAM_FIELD(audio_bitrate, .toDouble()) \
 	ASTREAM_FIELD(samplerate, .toInt()) \
 	ASTREAM_FIELD(channels, .toInt()) \
 
@@ -44,6 +42,61 @@ unquote(const QString &s)
 
 #define BUF_SIZE 256
 
+enum StreamType {
+	NONE,
+	AUDIO,
+	VIDEO
+};
+
+struct State {
+	StreamInfo *stream;
+	StreamType stream_type;
+	AudioStreamInfo *astream;
+	VideoStreamInfo *vstream;
+
+	State(): stream(NULL), stream_type(NONE), astream(NULL), vstream(NULL) { }
+};
+
+static void
+process_field(FileInfo *fi, State *s, const QString &key, const QString &value)
+{
+
+	if (key == "audio")
+		s->stream_type = AUDIO;
+	else if (key == "video")
+		s->stream_type = VIDEO;
+	else if (key == "codec") {
+		switch (s->stream_type) {
+		case AUDIO:
+			fi->audio_streams.push_back(AudioStreamInfo());
+			s->stream = s->astream = &fi->audio_streams.back();
+			break;
+		case VIDEO:
+			fi->video_streams.push_back(VideoStreamInfo());
+			s->stream = s->vstream = &fi->video_streams.back();
+			break;
+		default:
+			break;
+		}
+	} else if (key == "audio_codec") {
+		process_field(fi, s, "audio", "");
+		process_field(fi, s, "codec", value);
+	} else if (key == "video_codec") {
+		process_field(fi, s, "video", "");
+		process_field(fi, s, "codec", value);
+	}
+
+#define FIELD(field, conv, obj) \
+	if (key == #field && obj != NULL) \
+		obj->field = value conv;
+#define FILE_FIELD(f, c) FIELD(f, c, fi)
+#define STREAM_FIELD(f, c) FIELD(f, c, s->stream)
+#define ASTREAM_FIELD(f, c) FIELD(f, c, s->astream)
+#define VSTREAM_FIELD(f, c) FIELD(f, c, s->vstream)
+	FIELDS
+#undef FIELD
+}
+
 void
 FileInfo::retrieve(const QString &filename)
 {
@@ -58,33 +111,17 @@ FileInfo::retrieve(const QString &filename)
 	if (!proc.waitForStarted())
 		throw std::runtime_error("Info retrieval failed to start");
 
+	State state;
 	char buf[BUF_SIZE] = "";
 	proc.waitForReadyRead();
-	StreamInfo *last_stream = NULL;
-	AudioStreamInfo *last_astream = NULL;
-	VideoStreamInfo *last_vstream = NULL;
 	while (proc.readLine(buf, BUF_SIZE) > 0) {
 		QStringList sl = untail(buf, ',').split(": ");
 		if (sl.size() < 2)
 			continue;
 		QString key = unquote(sl[0]);
 		QString value = unquote(sl[1]);
-		if (key == "audio_codec") {
-			audio_streams.push_back(AudioStreamInfo());
-			last_stream = last_astream = &audio_streams.back();
-		} else if (key == "video_codec") {
-			video_streams.push_back(VideoStreamInfo());
-			last_stream = last_vstream = &video_streams.back();
-		}
-#define FIELD(field, conv, obj) \
-		if (key == #field && obj != NULL) \
-			obj->field = value conv;
-#define FILE_FIELD(f, c) FIELD(f, c, this)
-#define STREAM_FIELD(f, c) FIELD(f, c, last_stream)
-#define ASTREAM_FIELD(f, c) FIELD(f, c, last_astream)
-#define VSTREAM_FIELD(f, c) FIELD(f, c, last_vstream)
-		FIELDS
-#undef FIELD
+
+		process_field(this, &state, key, value);
 		proc.waitForReadyRead();
 	}
 	proc.setReadChannel(QProcess::StandardError);
