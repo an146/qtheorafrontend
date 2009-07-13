@@ -64,8 +64,8 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
 	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
 	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
-	connect(ui.audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
-	connect(ui.video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
+	connect(ui.info_audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
+	connect(ui.info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 	updateButtons();
 }
 
@@ -341,8 +341,8 @@ Frontend::retrieveInfo()
 	} catch (std::exception &x) {
 		updateStatus(x.what());
 	}
-	get_streams(ui.audio_stream, finfo.audio_streams);
-	get_streams(ui.video_stream, finfo.video_streams);
+	get_streams(ui.info_audio_stream, finfo.audio_streams);
+	get_streams(ui.info_video_stream, finfo.video_streams);
 	updateInfo();
 }
 
@@ -351,8 +351,8 @@ Frontend::updateInfo()
 {
 #define FIELD(f, t, o) ui. info_##f ->setText((o != NULL && input_valid) ? present_##t(o->f) : QString(""));
 #define FILE_FIELD(f, c) FIELD(f, c, (&finfo))
-#define ASTREAM_FIELD(f, c) FIELD(f, c, stream(ui.audio_stream, finfo.audio_streams))
-#define VSTREAM_FIELD(f, c) FIELD(f, c, stream(ui.video_stream, finfo.video_streams))
+#define ASTREAM_FIELD(f, c) FIELD(f, c, stream(ui.info_audio_stream, finfo.audio_streams))
+#define VSTREAM_FIELD(f, c) FIELD(f, c, stream(ui.info_video_stream, finfo.video_streams))
 		FIELDS
 #undef FIELD
 }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>727</width>
-    <height>395</height>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -386,7 +386,7 @@
         </widget>
        </item>
        <item row="4" column="6">
-        <widget class="QComboBox" name="video_stream"/>
+        <widget class="QComboBox" name="info_video_stream"/>
        </item>
        <item row="5" column="0" colspan="7">
         <widget class="Line" name="line_2">
@@ -436,7 +436,7 @@
         </widget>
        </item>
        <item row="6" column="6">
-        <widget class="QComboBox" name="audio_stream"/>
+        <widget class="QComboBox" name="info_audio_stream"/>
        </item>
        <item row="7" column="0">
         <widget class="QLabel" name="label_27">
