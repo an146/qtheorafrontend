@@ -70,6 +70,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
+	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
 	connect(ui.audio_const_quality, SIGNAL(toggled(bool)), ui.audio_quality, SLOT(setEnabled(bool)));
 	connect(ui.audio_const_bitrate, SIGNAL(toggled(bool)), ui.audio_bitrate, SLOT(setEnabled(bool)));
 	connect(ui.audio_quality, SIGNAL(valueChanged(int)), ui.audio_quality_label, SLOT(setNum(int)));
@@ -174,7 +175,12 @@ Frontend::updateButtons()
 {
 	bool running = transcoder->isRunning();
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
-	bool can_start = !running && !missing_data && input_valid;
+	bool encode = encode_audio() || encode_video();
+	bool can_start = !running && !missing_data && encode && input_valid;
+	if (can_start)
+		updateStatus("");
+	else if (!running && input_valid && !encode)
+		updateStatus("Nothing to encode");
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
@@ -663,3 +669,4 @@ Frontend::noSkeleton(bool checked)
 		}
 	}
 }
+

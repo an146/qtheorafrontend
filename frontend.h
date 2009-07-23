@@ -39,6 +39,8 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent *);
+	bool encode_audio() const { return ui.audio_encode->isChecked(); }
+	bool encode_video() const { return !finfo.video_streams.empty(); }
 
 protected slots:
 	void transcode();
