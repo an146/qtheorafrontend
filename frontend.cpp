@@ -72,6 +72,11 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
 	connect(ui.audio_const_quality, SIGNAL(toggled(bool)), ui.audio_quality, SLOT(setEnabled(bool)));
 	connect(ui.audio_const_bitrate, SIGNAL(toggled(bool)), ui.audio_bitrate, SLOT(setEnabled(bool)));
+	connect(ui.audio_quality, SIGNAL(valueChanged(int)), ui.audio_quality_label, SLOT(setNum(int)));
+	ui.audio_quality->setValue(10); // setting the widest label
+	ui.audio_encoding_mode->layout()->activate();
+	ui.audio_quality_label->setMinimumSize(ui.audio_quality_label->size());
+	ui.audio_quality->setValue(1);
 	retrieveInfo();
 }
 

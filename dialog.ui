@@ -570,7 +570,7 @@
           </widget>
          </item>
          <item row="1" column="2" rowspan="3">
-          <widget class="QGroupBox" name="groupBox">
+          <widget class="QGroupBox" name="audio_encoding_mode">
            <property name="enabled">
             <bool>true</bool>
            </property>
@@ -610,17 +610,27 @@
                <enum>Qt::Horizontal</enum>
               </property>
               <property name="tickPosition">
-               <enum>QSlider::NoTicks</enum>
+               <enum>QSlider::TicksBelow</enum>
               </property>
               <property name="tickInterval">
                <number>1</number>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="1" column="1" colspan="2">
              <widget class="QComboBox" name="audio_bitrate">
               <property name="enabled">
                <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="audio_quality_label">
+              <property name="text">
+               <string>1</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
