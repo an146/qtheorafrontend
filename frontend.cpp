@@ -185,6 +185,8 @@ Frontend::outputEdited()
 	output_auto = ui.output->text().isEmpty();
 	if (ui.output->text().endsWith(".ogg"))
 		ui.no_skeleton->setChecked(true);
+	else if (ui.output->text().endsWith(".oga"))
+		ui.no_skeleton->setChecked(false);
 }
 
 /* returns a QDir that != dir */
@@ -648,11 +650,11 @@ input_filter()
 void
 Frontend::noSkeleton(bool checked)
 {
-	if (checked && finfo.video_streams.empty() /* !ui.video_encode->isChecked() */) {
+	if (finfo.video_streams.empty() /* !ui.video_encode->isChecked() */) {
 		QString out = ui.output->text();
-		if (out.endsWith(".oga")) {
+		if (out.endsWith(".oga") || out.endsWith(".ogg")) {
 			out.chop(4);
-			ui.output->setText(out + ".ogg");
+			ui.output->setText(out + (checked ? ".ogg" : ".oga"));
 		}
 	}
 }
