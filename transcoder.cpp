@@ -24,7 +24,6 @@
 #include <QMetaType>
 #include <QFile>
 #include <QMessageBox>
-#include <QTimer>
 #include "transcoder.h"
 #include "frontend.h"
 

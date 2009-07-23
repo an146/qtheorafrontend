@@ -21,11 +21,8 @@
  */
 
 #include <stdexcept>
-#include <cmath> // std::floor
-#include <Qt>
 #include <QMessageBox>
 #include <QCloseEvent>
-#include <QDebug>
 #include "frontend.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
