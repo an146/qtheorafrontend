@@ -56,6 +56,7 @@ protected slots:
 	void retrieveInfo();
 	void updateInfo();
 	void updateAudio();
+	void updateVideo();
 	void partialStateChanged();
 	void fixExtension();
 	void selectOutput();

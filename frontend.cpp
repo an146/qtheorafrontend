@@ -27,6 +27,12 @@
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
+#define DEFAULT_AUDIO_QUALITY 1
+#define DEFAULT_VIDEO_QUALITY 5
+
+#define MIN_BITRATE 1
+#define MAX_BITRATE 16778
+
 static QString input_filter();
 
 Frontend::Frontend(QWidget* parent)
@@ -75,11 +81,20 @@ Frontend::Frontend(QWidget* parent)
 	ui.audio_quality->setValue(10); // setting the widest label
 	ui.audio_encoding_mode->layout()->activate();
 	ui.audio_quality_label->setMinimumSize(ui.audio_quality_label->size());
-	ui.audio_quality->setValue(1);
+	ui.audio_quality->setValue(DEFAULT_AUDIO_QUALITY);
 
 	/* Video */
+	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateVideo()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
+	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_bitrate, SLOT(setEnabled(bool)));
+	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
+	ui.video_quality->setValue(10); // setting the widest label
+	ui.video_encoding_mode->layout()->activate();
+	ui.video_quality_label->setMinimumSize(ui.video_quality_label->size());
+	ui.video_quality->setValue(DEFAULT_VIDEO_QUALITY);
+	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, ui.video_bitrate));
 
 	retrieveInfo();
 }
@@ -111,36 +126,64 @@ Frontend::closeEvent(QCloseEvent *event)
 	}
 }
 
+static QString widget_value(QSpinBox *w)       { return QString::number(w->value()); }
+static QString widget_value(QDoubleSpinBox *w) { return QString::number(w->value()); }
+static QString widget_value(QSlider *w)        { return QString::number(w->value()); }
+static QString widget_value(QComboBox *w)      { return w->currentText(); }
+static QString widget_value(QLineEdit *w)      { return w->text(); }
+
 void
 Frontend::transcode()
 {
 	QStringList ea;
 
+#define OPTION(opt) ea = ea << opt
+#define OPTION_FLAG(opt, widget) if (ui.widget->isChecked()) OPTION(opt)
+#define OPTION_VALUE(opt, widget) ea = ea << opt << widget_value(ui.widget)
+#define OPTION_DEFVALUE(opt, widget) if (ui.widget->currentIndex() > 0) OPTION_VALUE(opt, widget)
 	if (ui.partial->isChecked()) {
-		ea = ea << "--starttime" << QString::number(ui.partial_start->value());
-		ea = ea << "--endtime" << QString::number(ui.partial_end->value());
+		OPTION_VALUE("--starttime", partial_start);
+		OPTION_VALUE("--endtime", partial_end);
 	}
-	if (ui.sync->isChecked())
-		ea = ea << "--sync";
-	if (ui.no_skeleton->isChecked())
-		ea = ea << "--no-skeleton";
+	OPTION_FLAG("--sync", sync);
+	OPTION_FLAG("--no-skeleton", no_skeleton);
 
 	if (ui.audio_encode->isChecked()) {
-		ea = ea << "--audiostream" << ui.audio_stream->currentText();
-		ea = ea << "--channels" << ui.audio_channels->currentText();
-		ea = ea << "--samplerate" << ui.audio_samplerate->currentText();
+		OPTION_VALUE("--audiostream", audio_stream);
+		OPTION_VALUE("--channels", audio_channels);
+		OPTION_VALUE("--samplerate", audio_samplerate);
 		if (ui.audio_const_quality->isChecked())
-			ea = ea << "--audioquality" << QString::number(ui.audio_quality->value());
+			OPTION_VALUE("--audioquality", audio_quality);
 		else if (ui.audio_const_bitrate->isChecked())
-			ea = ea << "--audiobitrate" << ui.audio_bitrate->currentText();
-	} else {
-		ea = ea << "--noaudio";
-	}
+			OPTION_VALUE("--audiobitrate", audio_bitrate);
+	} else
+		OPTION("--noaudio");
 
 	if (ui.video_encode->isChecked()) {
-	} else {
-		ea = ea << "--novideo";
-	}
+		OPTION_VALUE("--videostream", video_stream);
+		if (ui.video_const_quality->isChecked())
+			OPTION_VALUE("--videoquality", video_quality);
+		else if (ui.video_const_bitrate->isChecked())
+			OPTION_VALUE("--videobitrate", video_bitrate);
+		OPTION_VALUE("--width", video_width);
+		OPTION_VALUE("--height", video_height);
+		OPTION_FLAG("--max-size", video_max_size);
+		OPTION_DEFVALUE("--aspect", video_frame_aspect_ratio);
+		OPTION_VALUE("--croptop", video_crop_top);
+		OPTION_VALUE("--cropbottom", video_crop_bottom);
+		OPTION_VALUE("--cropleft", video_crop_left);
+		OPTION_VALUE("--cropright", video_crop_right);
+		OPTION_FLAG("--optimize", video_optimize);
+		OPTION_FLAG("--deinterlace", video_deinterlace);
+		OPTION_DEFVALUE("--inputfps", video_input_framerate);
+		OPTION_DEFVALUE("--framerate", video_output_framerate);
+	} else
+		OPTION("--novideo");
+#undef OPTION
+#undef OPTION_FLAG
+#undef OPTION_VALUE
+#undef OPTION_DEFVALUE
+
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
@@ -401,11 +444,13 @@ Frontend::retrieveInfo()
 	get_streams(ui.info_audio_stream, finfo.audio_streams);
 	get_streams(ui.info_video_stream, finfo.video_streams);
 	get_streams(ui.audio_stream, finfo.audio_streams);
+	get_streams(ui.video_stream, finfo.video_streams);
 
 	setDefaultOutput();
 	updateButtons();
 	updateInfo();
 	updateAudio();
+	updateVideo();
 }
 
 void
@@ -442,17 +487,29 @@ static const int bitrates[] = {
 
 #define select_last(c) c->setCurrentIndex(c->count() - 1)
 
+/* recursively enable/disable all widgets in a layout */
+
+static void
+layout_enable(QLayout *layout, bool enabled)
+{
+	int c = layout->count();
+
+	for (int i = 0; i < c; i++) {
+		QWidget *w = layout->itemAt(i)->widget();
+		QLayout *l = layout->itemAt(i)->layout();
+		if (w != 0)
+			w->setEnabled(enabled);
+		else if (l != 0)
+			layout_enable(l, enabled);
+	}
+}
+
 void
 Frontend::updateAudio()
 {
-	int c = ui.audio_options_layout->count();
 	int i;
 
-	for (i = 0; i < c; i++) {
-		QWidget *w = ui.audio_options_layout->itemAt(i)->widget();
-		if (w != 0)
-			w->setEnabled(encode_audio());
-	}
+	layout_enable(ui.audio_options_layout, encode_audio());
 	ui.audio_channels->clear();
 	ui.audio_samplerate->clear();
 	ui.audio_bitrate->clear();
@@ -471,6 +528,21 @@ Frontend::updateAudio()
 		select_last(ui.audio_channels);
 		select_last(ui.audio_samplerate);
 		select_last(ui.audio_bitrate);
+	}
+}
+
+void
+Frontend::updateVideo()
+{
+	layout_enable(ui.video_options_layout, encode_video());
+	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
+	if (s != NULL) {
+		ui.video_width->setValue(s->width);
+		ui.video_height->setValue(s->height);
+		ui.video_crop_left->setMaximum(s->width);
+		ui.video_crop_right->setMaximum(s->width);
+		ui.video_crop_top->setMaximum(s->height);
+		ui.video_crop_bottom->setMaximum(s->height);
 	}
 }
 
