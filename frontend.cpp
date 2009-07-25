@@ -244,13 +244,13 @@ Frontend::updateButtons()
 void
 Frontend::outputChanged()
 {
-	if (ui.output->text().endsWith(".ogg")) {
+	if (ui.output->text().endsWith(".ogg"))
 		ui.no_skeleton->setChecked(true);
-		ui.video_encode->setChecked(false);
-	} else if (ui.output->text().endsWith(".oga")) {
+	else if (ui.output->text().endsWith(".oga")) {
 		ui.no_skeleton->setChecked(false);
 		ui.video_encode->setChecked(false);
 	} else if (ui.output->text().endsWith(".ogv")) {
+		ui.no_skeleton->setChecked(false);
 		if (!finfo.video_streams.empty())
 			ui.video_encode->setChecked(true);
 	}
@@ -784,5 +784,5 @@ Frontend::selectOutput()
 QString
 Frontend::default_extension() const
 {
-	return encode_video() ? "ogv" : (ui.no_skeleton->isChecked() ? "ogg" : "oga");
+	return ui.no_skeleton->isChecked() ? "ogg" : (encode_video() ? "ogv" : "oga");
 }
