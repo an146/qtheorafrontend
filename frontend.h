@@ -40,7 +40,8 @@ public:
 protected:
 	void closeEvent(QCloseEvent *);
 	bool encode_audio() const { return ui.audio_encode->isChecked(); }
-	bool encode_video() const { return !finfo.video_streams.empty(); }
+	bool encode_video() const { return ui.video_encode->isChecked(); }
+	QString default_extension() const;
 
 protected slots:
 	void transcode();
@@ -49,13 +50,15 @@ protected slots:
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
 	void updateButtons();
+	void outputChanged();
 	void outputEdited();
 	void setDefaultOutput();
 	void retrieveInfo();
 	void updateInfo();
 	void updateAudio();
 	void partialStateChanged();
-	void noSkeleton(bool);
+	void fixExtension();
+	void selectOutput();
 
 private:
 	Ui::Dialog ui;
