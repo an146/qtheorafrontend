@@ -440,10 +440,10 @@ Frontend::updateAudio()
 		for (i = 0; i < s->channels; i++)
 			ui.audio_channels->addItem(QString::number(i + 1));
 		for (i = 0; i < LENGTH(samplerates); i++)
-			if (samplerates[i] <= s->samplerate)
+			if (s->samplerate <= 0 || samplerates[i] <= s->samplerate)
 				ui.audio_samplerate->addItem(QString::number(samplerates[i]));
 		for (i = 0; i < LENGTH(bitrates); i++)
-			if (bitrates[i] <= s->bitrate)
+			if (s->bitrate <= 0 || bitrates[i] <= s->bitrate)
 				ui.audio_bitrate->addItem(QString::number(bitrates[i]));
 		select_last(ui.audio_channels);
 		select_last(ui.audio_samplerate);
