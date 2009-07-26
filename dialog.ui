@@ -900,7 +900,7 @@
                <widget class="QComboBox" name="video_frame_aspect_ratio">
                 <item>
                  <property name="text">
-                  <string>Same as source</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                 <item>
