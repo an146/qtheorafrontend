@@ -33,6 +33,9 @@
 #define MIN_BITRATE 1
 #define MAX_BITRATE 16778
 
+/* a year will do :) */
+#define MAX_TIME (365 * 24 * 3600)
+
 static QString input_filter();
 
 Frontend::Frontend(QWidget* parent)
@@ -235,7 +238,7 @@ Frontend::updateButtons()
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
-	ui.partial->setEnabled(input_valid && finfo.duration > 0);
+	ui.partial->setEnabled(input_valid);
 	partialStateChanged();
 	if (exitting)
 		close();
@@ -424,12 +427,13 @@ Frontend::retrieveInfo()
 			throw std::runtime_error("Not a file");
 		finfo.retrieve(input);
 
+		double max_time = finfo.duration > 0 ? finfo.duration : MAX_TIME;
 		ui.partial_start->setMinimum(0);
-		ui.partial_start->setMaximum(finfo.duration);
+		ui.partial_start->setMaximum(max_time);
 		ui.partial_start->setValue(0);
 		ui.partial_end->setMinimum(0);
-		ui.partial_end->setMaximum(finfo.duration);
-		ui.partial_end->setValue(finfo.duration);
+		ui.partial_end->setMaximum(max_time);
+		ui.partial_end->setValue(finfo.duration > 0 ? finfo.duration : 0);
 
 		input_valid = true;
 		updateStatus("");
@@ -473,8 +477,7 @@ static const int samplerates[] = {
 };
 
 static const int bitrates[] = {
-	32,
-	40,
+	45,
 	48,
 	56,
 	64,

@@ -573,7 +573,7 @@
             <item row="1" column="1">
              <widget class="QSlider" name="audio_quality">
               <property name="minimum">
-               <number>-2</number>
+               <number>-1</number>
               </property>
               <property name="maximum">
                <number>10</number>
