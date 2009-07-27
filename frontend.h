@@ -47,19 +47,28 @@ protected slots:
 	void transcode();
 	bool cancel();
 	void updateStatus(QString statusText);
+	void updateButtons();
+
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
-	void updateButtons();
 	void outputChanged();
 	void outputEdited();
+	void partialStateChanged();
 	void setDefaultOutput();
+	void fixExtension();
+	void selectOutput();
+
 	void retrieveInfo();
 	void updateInfo();
 	void updateAudio();
-	void updateVideo();
-	void partialStateChanged();
-	void fixExtension();
-	void selectOutput();
+	void updateVideo(bool another_file = false);
+	double cropped_aspect() const;
+	void fixVideoWidth();
+	void fixVideoHeight();
+	void xcropChanged();
+	void ycropChanged();
+	void videoWidthChanged();
+	void videoHeightChanged();
 
 private:
 	Ui::Dialog ui;

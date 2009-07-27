@@ -93,6 +93,12 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_bitrate, SLOT(setEnabled(bool)));
 	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
+	connect(ui.video_crop_left, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
+	connect(ui.video_crop_right, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
+	connect(ui.video_crop_top, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
+	connect(ui.video_crop_bottom, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
+	connect(ui.video_width, SIGNAL(valueChanged(int)), this, SLOT(videoWidthChanged()));
+	connect(ui.video_height, SIGNAL(valueChanged(int)), this, SLOT(videoHeightChanged()));
 	ui.video_quality->setValue(10); // setting the widest label
 	ui.video_encoding_mode->layout()->activate();
 	ui.video_quality_label->setMinimumSize(ui.video_quality_label->size());
@@ -454,7 +460,7 @@ Frontend::retrieveInfo()
 	updateButtons();
 	updateInfo();
 	updateAudio();
-	updateVideo();
+	updateVideo(true);
 }
 
 void
@@ -535,13 +541,19 @@ Frontend::updateAudio()
 }
 
 void
-Frontend::updateVideo()
+Frontend::updateVideo(bool another_file)
 {
 	layout_enable(ui.video_options_layout, encode_video());
 	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
-	if (s != NULL) {
+	if (another_file && s != NULL) {
 		ui.video_width->setValue(s->width);
 		ui.video_height->setValue(s->height);
+
+		ui.video_crop_left->setValue(0);
+		ui.video_crop_right->setValue(0);
+		ui.video_crop_top->setValue(0);
+		ui.video_crop_bottom->setValue(0);
+
 		ui.video_crop_left->setMaximum(s->width);
 		ui.video_crop_right->setMaximum(s->width);
 		ui.video_crop_top->setMaximum(s->height);
@@ -788,4 +800,57 @@ QString
 Frontend::default_extension() const
 {
 	return ui.no_skeleton->isChecked() ? "ogg" : (encode_video() ? "ogv" : "oga");
+}
+
+double
+Frontend::cropped_aspect() const
+{
+	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
+	double x = s->width - ui.video_crop_left->value() - ui.video_crop_right->value();
+	double y = s->height - ui.video_crop_top->value() - ui.video_crop_bottom->value();
+	return x / y;
+}
+
+void
+Frontend::fixVideoWidth()
+{
+	ui.video_width->setValue(int(ui.video_height->value() * cropped_aspect()));
+}
+
+void
+Frontend::fixVideoHeight()
+{
+	ui.video_height->setValue(int(ui.video_width->value() / cropped_aspect()));
+}
+
+void
+Frontend::xcropChanged()
+{
+	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
+	ui.video_crop_left->setMaximum(s->width - ui.video_crop_right->value() - 1);
+	ui.video_crop_right->setMaximum(s->width - ui.video_crop_left->value() - 1);
+	fixVideoWidth();
+}
+
+void
+Frontend::ycropChanged()
+{
+	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
+	ui.video_crop_top->setMaximum(s->height - ui.video_crop_bottom->value() - 1);
+	ui.video_crop_bottom->setMaximum(s->height - ui.video_crop_top->value() - 1);
+	fixVideoHeight();
+}
+
+void
+Frontend::videoWidthChanged()
+{
+	if (ui.video_width->hasFocus())
+		fixVideoHeight();
+}
+
+void
+Frontend::videoHeightChanged()
+{
+	if (ui.video_height->hasFocus())
+		fixVideoWidth();
 }
