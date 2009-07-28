@@ -194,6 +194,7 @@ Frontend::transcode()
 #undef OPTION_VALUE
 #undef OPTION_DEFVALUE
 
+	ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
@@ -216,6 +217,21 @@ void
 Frontend::updateStatus(QString statusText)
 {
 	ui.status->setText(statusText);
+	if (statusText.startsWith("{")) {
+		QStringList sl = statusText.split(QRegExp("(\\{|,|\\})"), QString::SkipEmptyParts);
+		for (QStringList::iterator i = sl.begin(); i != sl.end(); ++i) {
+			QStringList kv = i->split(": ");
+			if (kv[0].trimmed() == "\"duration\"") {
+				int v = (int)kv[1].toDouble();
+				ui.progress->setMaximum(v > 0 ? v : 0);
+			} else if (kv[0].trimmed() == "\"position\"") {
+				int v = (int)kv[1].toDouble();
+				if (v < ui.progress->maximum())
+					ui.progress->setValue(v);
+			} else if (kv[0].trimmed() == "\"result\"")
+				ui.progress->setValue(ui.progress->maximum());
+		}
+	}
 }
 
 void
@@ -246,6 +262,11 @@ Frontend::updateButtons()
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
 	ui.partial->setEnabled(input_valid);
+	ui.progress->setEnabled(running);
+	if (!running) {
+		ui.progress->setMaximum(100);
+		ui.progress->reset();
+	}
 	partialStateChanged();
 	if (exitting)
 		close();
