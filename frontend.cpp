@@ -99,6 +99,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_crop_bottom, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
 	connect(ui.video_width, SIGNAL(valueChanged(int)), this, SLOT(videoWidthChanged()));
 	connect(ui.video_height, SIGNAL(valueChanged(int)), this, SLOT(videoHeightChanged()));
+	connect(ui.video_keep_proportions, SIGNAL(toggled(bool)), this, SLOT(fixVideoHeight()));
 	ui.video_quality->setValue(10); // setting the widest label
 	ui.video_encoding_mode->layout()->activate();
 	ui.video_quality_label->setMinimumSize(ui.video_quality_label->size());
@@ -814,13 +815,15 @@ Frontend::cropped_aspect() const
 void
 Frontend::fixVideoWidth()
 {
-	ui.video_width->setValue(int(ui.video_height->value() * cropped_aspect() + 0.5));
+	if (ui.video_keep_proportions->isChecked())
+		ui.video_width->setValue(int(ui.video_height->value() * cropped_aspect() + 0.5));
 }
 
 void
 Frontend::fixVideoHeight()
 {
-	ui.video_height->setValue(int(ui.video_width->value() / cropped_aspect() + 0.5));
+	if (ui.video_keep_proportions->isChecked())
+		ui.video_height->setValue(int(ui.video_width->value() / cropped_aspect() + 0.5));
 }
 
 void
