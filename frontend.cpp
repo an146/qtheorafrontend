@@ -814,13 +814,13 @@ Frontend::cropped_aspect() const
 void
 Frontend::fixVideoWidth()
 {
-	ui.video_width->setValue(int(ui.video_height->value() * cropped_aspect()));
+	ui.video_width->setValue(int(ui.video_height->value() * cropped_aspect() + 0.5));
 }
 
 void
 Frontend::fixVideoHeight()
 {
-	ui.video_height->setValue(int(ui.video_width->value() / cropped_aspect()));
+	ui.video_height->setValue(int(ui.video_width->value() / cropped_aspect() + 0.5));
 }
 
 void
