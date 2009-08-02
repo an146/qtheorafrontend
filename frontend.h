@@ -2,7 +2,7 @@
  * frontend.h - frontend widget declarations
  * This file is part of QTheoraFrontend.
  *
- * Copyright (C) 2009  Denver Gingerich <denver@ossguy.com>
+ * Copyright (C) 2009  Anton Novikov <an146@ya.ru>
  *
  * The contents of this file can be redistributed and/or modified under the
  * terms of the GNU General Public License as published by the Free
