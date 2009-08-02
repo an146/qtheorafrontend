@@ -26,6 +26,7 @@
 #include <QThread>
 #include <QProcess>
 #include <QMutex>
+#include <QDateTime>
 
 class Frontend;
 
@@ -40,6 +41,7 @@ public:
 
 	QString input_filename() { return input_filename_; }
 	QString output_filename() { return output_filename_; }
+	double elapsed() const;
 
 	enum {
 		OK,
@@ -71,6 +73,7 @@ private:
 	QProcess proc_;
 	Frontend *frontend_;
 	QStringList extra_args_;
+	QDateTime start_time_;
 	bool stopping_;
 
 	double position_;

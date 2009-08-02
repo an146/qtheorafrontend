@@ -35,7 +35,7 @@ public:
 	Frontend(QWidget* parent = 0);
 	int cancel_ask(const QString &, bool);
 
-	static QString time2string(double, int decimals = 0);
+	static QString time2string(double, int decimals = 0, bool colons = true);
 
 protected:
 	void closeEvent(QCloseEvent *);
@@ -72,7 +72,7 @@ protected slots:
 	void ycropChanged();
 	void videoWidthChanged();
 	void videoHeightChanged();
-	void updateSoftTargetQuality();
+	void updateSoftTarget();
 
 private:
 	Ui::Dialog ui;

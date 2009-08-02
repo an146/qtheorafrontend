@@ -96,12 +96,15 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
 	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
+	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality_label, SLOT(setEnabled(bool)));
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_bitrate, SLOT(setEnabled(bool)));
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_two_pass, SLOT(setEnabled(bool)));
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_soft_target, SLOT(setEnabled(bool)));
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateSoftTargetQuality()));
-	connect(ui.video_soft_target, SIGNAL(toggled(bool)), this, SLOT(updateSoftTargetQuality()));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_st, SLOT(setEnabled(bool)));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
+	connect(ui.video_st, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
+	connect(ui.video_st_quality_on, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
 	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
+	connect(ui.video_st_quality, SIGNAL(valueChanged(int)), ui.video_st_quality_label, SLOT(setNum(int)));
 	connect(ui.video_crop_left, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
 	connect(ui.video_crop_right, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
 	connect(ui.video_crop_top, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
@@ -110,9 +113,12 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_height, SIGNAL(valueChanged(int)), this, SLOT(videoHeightChanged()));
 	connect(ui.video_keep_proportions, SIGNAL(toggled(bool)), this, SLOT(fixVideoHeight()));
 	ui.video_quality->setValue(10); // setting the widest label
+	ui.video_st_quality->setValue(10);
 	ui.video_encoding_mode->layout()->activate();
 	ui.video_quality_label->setMinimumSize(ui.video_quality_label->size());
+	ui.video_st_quality_label->setMinimumSize(ui.video_quality_label->size());
 	ui.video_quality->setValue(DEFAULT_VIDEO_QUALITY);
+	ui.video_st_quality->setValue(DEFAULT_VIDEO_QUALITY);
 	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, ui.video_bitrate));
 
 	retrieveInfo();
@@ -186,8 +192,8 @@ Frontend::transcode()
 		OPTION_VALUE("--videoquality", video_quality);
 		OPTION_VALUE("--videobitrate", video_bitrate);
 		OPTION_FLAG("--two-pass", video_two_pass);
-		OPTION_FLAG("--soft-target", video_soft_target);
-		OPTION_VALUE("-v", video_soft_target_quality);
+		OPTION_FLAG("--soft-target", video_st);
+		OPTION_VALUE("-v", video_st_quality);
 
 		OPTION_VALUE("--width", video_width);
 		OPTION_VALUE("--height", video_height);
@@ -209,10 +215,6 @@ Frontend::transcode()
 #undef OPTION_DEFVALUE
 
 	ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
-	ui.progress->setFormat(ui.video_two_pass->isChecked() ?
-		QString("First pass: %p%") :
-		QString("%p%")
-	);
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
@@ -243,24 +245,24 @@ void
 Frontend::updateStatus(double pos, double eta, double audio_b, double video_b, int pass)
 {
 	QString status = "";
-	status += "Position: " + QString::number(pos, 'f', 1);
-	if (eta > 0)
-		status += "   Estimated Time Remaining: " + QString::number(eta, 'f', 1);
+	status += "Position: " + time2string(pos);
+	if (finfo.duration > 0)
+		status += "/" + time2string(finfo.duration);
 	if (audio_b > 0)
 		status += "   Audio Bitrate: " + QString::number(audio_b, 'f', 0);
 	if (video_b > 0)
 		status += "   Video Bitrate: " + QString::number(video_b, 'f', 0);
+	status += "   Time Elapsed: " + time2string(transcoder->elapsed(), 0, false);
 
-	switch (pass) {
-	case 0:
-		ui.progress->setFormat("First pass: %p%");
-		break;
-	case 1:
-		ui.progress->setFormat("Second pass: %p%");
-		break;
-	default:
-		ui.progress->setFormat("%p%");
-	}
+	QString format =
+		pass == 0 ? QString("First pass: ") :
+		pass == 1 ? QString("Second pass: ") :
+		QString();
+
+	format += "%p%";
+	if (eta > 0)
+		format += QString("   ETA: ") + time2string(eta, 0, false);
+	ui.progress->setFormat(format);
 
 	int ipos = (int)pos;
 	if (ipos < ui.progress->maximum())
@@ -276,7 +278,12 @@ Frontend::finished(int reason)
 	switch (reason) {
 	case Transcoder::OK:
 		keep_output = true;
-		ui.progress->setValue(ui.progress->maximum());
+		if (ui.progress->maximum() > 0)
+			ui.progress->setValue(ui.progress->maximum());
+		else {
+			ui.progress->setMaximum(1);
+			ui.progress->reset();
+		}
 		finish_message = "Encoding finished successfully";
 		QMessageBox::information(this, "qtheorafeontend", finish_message);
 		break;
@@ -659,7 +666,7 @@ Frontend::partialStateChanged()
 }
 
 QString
-Frontend::time2string(double t, int decimals)
+Frontend::time2string(double t, int decimals, bool colons)
 {
 	if (t < 0)
 		return "";
@@ -673,7 +680,16 @@ Frontend::time2string(double t, int decimals)
 	long long hours = minutes / 60;
 
 	char buf[BUF_SIZE];
-	snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
+	if (colons)
+		snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
+	else if (hours > 0)
+		snprintf(buf, BUF_SIZE, "%llih %llim %llis", hours, minutes % 60, seconds % 60);
+	else if (minutes > 0)
+		snprintf(buf, BUF_SIZE, "%llim %llis", minutes % 60, seconds % 60);
+	else if (seconds > 0)
+		snprintf(buf, BUF_SIZE, "%llis", seconds % 60);
+	else
+		snprintf(buf, BUF_SIZE, "0s");
 
 	double s = t - seconds;
 	for (int i = 0; i < decimals; i++)
@@ -948,7 +964,10 @@ Frontend::videoHeightChanged()
 }
 
 void
-Frontend::updateSoftTargetQuality()
+Frontend::updateSoftTarget()
 {
-	ui.video_soft_target_quality->setEnabled(ui.video_const_bitrate->isChecked() && ui.video_soft_target->isChecked());
+	ui.video_st_quality_on->setEnabled(ui.video_st->isEnabled() && ui.video_st->isChecked());
+	bool quality_enabled = ui.video_st_quality_on->isEnabled() && ui.video_st_quality_on->isChecked();
+	ui.video_st_quality->setEnabled(quality_enabled);
+	ui.video_st_quality_label->setEnabled(quality_enabled);
 }

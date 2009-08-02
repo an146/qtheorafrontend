@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>887</width>
-    <height>619</height>
+    <height>621</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -736,116 +736,6 @@
        </item>
        <item>
         <layout class="QGridLayout" name="video_options_layout" columnstretch="1,1">
-         <item row="1" column="0">
-          <widget class="QGroupBox" name="video_encoding_mode">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="title">
-            <string>Encoding mode</string>
-           </property>
-           <layout class="QGridLayout" name="gridLayout_4">
-            <item row="0" column="1">
-             <widget class="QRadioButton" name="video_const_quality">
-              <property name="text">
-               <string>Constant Quality:</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QRadioButton" name="video_const_bitrate">
-              <property name="text">
-               <string>Constant Bitrate (kbit/s):</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2" colspan="3">
-             <widget class="QSlider" name="video_quality">
-              <property name="minimum">
-               <number>0</number>
-              </property>
-              <property name="maximum">
-               <number>10</number>
-              </property>
-              <property name="value">
-               <number>5</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="tickPosition">
-               <enum>QSlider::TicksBelow</enum>
-              </property>
-              <property name="tickInterval">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="5">
-             <widget class="QLabel" name="video_quality_label">
-              <property name="text">
-               <string>5</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2" colspan="4">
-             <widget class="QLineEdit" name="video_bitrate">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>1234</string>
-              </property>
-              <property name="frame">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QCheckBox" name="video_two_pass">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>Two pass</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="4" colspan="2">
-             <widget class="QSlider" name="video_soft_target_quality">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="maximum">
-               <number>10</number>
-              </property>
-              <property name="value">
-               <number>5</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2" colspan="2">
-             <widget class="QCheckBox" name="video_soft_target">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>Soft target</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
          <item row="1" column="1">
           <widget class="QGroupBox" name="groupBox_3">
            <property name="title">
@@ -993,6 +883,19 @@
                </spacer>
               </item>
              </layout>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_10">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </widget>
@@ -1420,6 +1323,164 @@
             </spacer>
            </item>
           </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="QGroupBox" name="video_encoding_mode">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="title">
+            <string>Encoding mode</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
+             <widget class="QRadioButton" name="video_const_quality">
+              <property name="text">
+               <string>Constant Quality:</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QRadioButton" name="video_const_bitrate">
+              <property name="text">
+               <string>Constant Bitrate (kbit/s):</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSlider" name="video_quality">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>10</number>
+              </property>
+              <property name="value">
+               <number>5</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="tickPosition">
+               <enum>QSlider::TicksBelow</enum>
+              </property>
+              <property name="tickInterval">
+               <number>1</number>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="video_quality_label">
+              <property name="text">
+               <string>5</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1" colspan="2">
+             <widget class="QLineEdit" name="video_bitrate">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>1234</string>
+              </property>
+              <property name="frame">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <widget class="QCheckBox" name="video_st">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>Soft target</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="video_st_quality_on">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>Min. quality</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="3" column="1">
+             <widget class="QSlider" name="video_st_quality">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>10</number>
+              </property>
+              <property name="value">
+               <number>5</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="tickPosition">
+               <enum>QSlider::TicksBelow</enum>
+              </property>
+              <property name="tickInterval">
+               <number>1</number>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QLabel" name="video_st_quality_label">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>5</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QCheckBox" name="video_two_pass">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Two pass</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </item>
         </layout>
        </item>

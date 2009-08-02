@@ -45,6 +45,7 @@ Transcoder::start(const QString &input, const QString &output, const QStringList
 	if (!isRunning()) {
 		input_filename_ = input;
 		output_filename_ = output;
+		start_time_ = QDateTime::currentDateTime();
 		extra_args_ = ea;
 		QThread::start();
 	}
@@ -72,6 +73,12 @@ Transcoder::ffmpeg2theora()
 			ffmpeg2theora_ = bundled;
 	}
 	return ffmpeg2theora_;
+}
+
+double
+Transcoder::elapsed() const
+{
+	return start_time_.secsTo(QDateTime::currentDateTime());
 }
 
 #define BUF_SIZE 256
