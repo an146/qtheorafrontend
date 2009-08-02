@@ -24,7 +24,6 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include "frontend.h"
-#include "util.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
@@ -51,7 +50,10 @@ Frontend::Frontend(QWidget* parent)
 	transcoder = new Transcoder(this);
 	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(finished(int)), this, SLOT(finished(int)));
 	connect(transcoder, SIGNAL(statusUpdate(QString)), this, SLOT(updateStatus(QString)));
+	connect(transcoder, SIGNAL(statusUpdate(double, double, double, double, int)),
+			this, SLOT(updateStatus(double, double, double, double, int)));
 
 	input_dlg.setOption(QFileDialog::HideNameFilterDetails);
 	input_dlg.setFileMode(QFileDialog::ExistingFile);
@@ -78,6 +80,7 @@ Frontend::Frontend(QWidget* parent)
 
 	/* Audio */
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
+	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
 	connect(ui.audio_const_quality, SIGNAL(toggled(bool)), ui.audio_quality, SLOT(setEnabled(bool)));
 	connect(ui.audio_const_bitrate, SIGNAL(toggled(bool)), ui.audio_bitrate, SLOT(setEnabled(bool)));
@@ -89,6 +92,7 @@ Frontend::Frontend(QWidget* parent)
 
 	/* Video */
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateVideo()));
+	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
 	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
@@ -199,46 +203,89 @@ Frontend::transcode()
 #undef OPTION_DEFVALUE
 
 	ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
+	ui.progress->setFormat(ui.video_two_pass->isChecked() ?
+		QString("First pass: %p%") :
+		QString("%p%")
+	);
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
 bool
 Frontend::cancel()
 {
-	bool keep = false;
-
 	switch (cancel_ask("You are going to cancel the encoding. ", true)) {
-	case QMessageBox::Save:
-		keep = true;
 	case QMessageBox::Discard:
-		transcoder->stop(keep);
+		keep_output = false;
+		transcoder->stop();
 		return true;
+	case QMessageBox::Save:
+		keep_output = true;
+		transcoder->stop();
+		return true;
+	default:
+		return false;
 	}
-	return false;
 }
 
 void
 Frontend::updateStatus(QString statusText)
 {
 	ui.status->setText(statusText);
-	if (statusText.startsWith("{")) {
-		QStringList sl = statusText.split(QRegExp("(\\{|,|\\})"), QString::SkipEmptyParts);
-		for (QStringList::iterator i = sl.begin(); i != sl.end(); ++i) {
-			QString key, value;
-			if (!parse_json_pair(*i, &key, &value))
-				continue;
+}
 
-			if (key == "duration") {
-				int v = (int)value.toDouble();
-				ui.progress->setMaximum(v > 0 ? v : 0);
-			} else if (key == "position") {
-				int v = (int)value.toDouble();
-				if (v < ui.progress->maximum())
-					ui.progress->setValue(v);
-			} else if (key == "result")
-				ui.progress->setValue(ui.progress->maximum());
-		}
+void
+Frontend::updateStatus(double pos, double eta, double audio_b, double video_b, int pass)
+{
+	QString status = "";
+	status += "Position: " + QString::number(pos, 'f', 1);
+	if (eta > 0)
+		status += "   Estimated Time Remaining: " + QString::number(eta, 'f', 1);
+	if (audio_b > 0)
+		status += "   Audio Bitrate: " + QString::number(audio_b, 'f', 0);
+	if (video_b > 0)
+		status += "   Video Bitrate: " + QString::number(video_b, 'f', 0);
+
+	switch (pass) {
+	case 0:
+		ui.progress->setFormat("First pass: %p%");
+		break;
+	case 1:
+		ui.progress->setFormat("Second pass: %p%");
+		break;
+	default:
+		ui.progress->setFormat("%p%");
 	}
+
+	int ipos = (int)pos;
+	if (ipos < ui.progress->maximum())
+		ui.progress->setValue(ipos);
+	updateStatus(status);
+}
+
+void
+Frontend::finished(int reason)
+{
+	QString finish_message;
+
+	switch (reason) {
+	case Transcoder::OK:
+		keep_output = true;
+		ui.progress->setValue(ui.progress->maximum());
+		finish_message = "Encoding finished successfully";
+		QMessageBox::information(this, "qtheorafeontend", finish_message);
+		break;
+	case Transcoder::FAILED:
+		keep_output = cancel_ask("Encoding failed. ", false) == QMessageBox::Save;
+	case Transcoder::STOPPED:
+		finish_message = keep_output ?
+			QString("Encoding failed. Partial file kept") :
+			QString("Encoding failed. Partial file deleted");
+		break;
+	}
+
+	if (!keep_output)
+		QFile(transcoder->output_filename()).remove();
+	emit updateStatus(finish_message);
 }
 
 void
@@ -261,10 +308,7 @@ Frontend::updateButtons()
 	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
 	bool encode = encode_audio() || encode_video();
 	bool can_start = !running && !missing_data && encode && input_valid;
-	if (can_start)
-		updateStatus("");
-	else if (!running && input_valid && !encode)
-		updateStatus("Nothing to encode");
+
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
@@ -277,6 +321,17 @@ Frontend::updateButtons()
 	partialStateChanged();
 	if (exitting)
 		close();
+}
+
+void
+Frontend::checkForSomethingToEncode()
+{
+	if (!transcoder->isRunning()) {
+		if (encode_audio() || encode_video())
+			updateStatus("");
+		else
+			updateStatus("Nothing to encode");
+	}
 }
 
 void

@@ -26,38 +26,36 @@
 #include <QMessageBox>
 #include "transcoder.h"
 #include "frontend.h"
+#include "util.h"
 
 Transcoder::Transcoder(Frontend *f)
-	: QThread(NULL), frontend(f)
+	: QThread(NULL), frontend_(f)
 {
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
-	proc.moveToThread(this);
-	connect(&proc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(procFinished(int, QProcess::ExitStatus)));
-	connect(&proc, SIGNAL(readyReadStandardOutput()), this, SLOT(readyRead()));
-	connect(&proc, SIGNAL(readyReadStandardError()), this, SLOT(readyRead()));
-	connect(this, SIGNAL(terminate()), &proc, SLOT(kill()));
+	proc_.moveToThread(this);
+	connect(&proc_, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(procFinished(int, QProcess::ExitStatus)));
+	connect(&proc_, SIGNAL(readyReadStandardOutput()), this, SLOT(readyRead()));
+	connect(&proc_, SIGNAL(readyReadStandardError()), this, SLOT(readyRead()));
+	connect(this, SIGNAL(terminate()), &proc_, SLOT(kill()));
 }
 
 void
 Transcoder::start(const QString &input, const QString &output, const QStringList &ea)
 {
 	if (!isRunning()) {
-		input_filename = input;
-		output_filename = output;
-		extra_args = ea;
+		input_filename_ = input;
+		output_filename_ = output;
+		extra_args_ = ea;
 		QThread::start();
 	}
 }
 
 void
-Transcoder::stop(bool keep)
+Transcoder::stop()
 {
-	if (isRunning()) {
-		keep_output = keep;
-		finish_message = keep ? QString("Encoding cancelled. Partial result kept") :
-		                        QString("Encoding cancelled. Partial result deleted");
+	stopping_ = true;
+	if (isRunning())
 		emit terminate();
-	}
 }
 
 QString
@@ -84,49 +82,66 @@ Transcoder::readyRead()
 	QProcess::ProcessChannel channel[2] = {QProcess::StandardOutput, QProcess::StandardError};
 	char buf[BUF_SIZE] = "";
 	for (int i = 0; i < 2; i++) {
-		proc.setReadChannel(channel[i]);
-		while (proc.canReadLine())
-			if (proc.readLine(buf, BUF_SIZE) > 0)
-				emit statusUpdate(QString(buf).trimmed());
+		proc_.setReadChannel(channel[i]);
+		while (proc_.canReadLine())
+			if (proc_.readLine(buf, BUF_SIZE) > 0)
+				processLine(QString(buf).trimmed());
 	}
 }
 
 void
 Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 {
-	if (finish_message.isEmpty()) {
-		/* the process died without our help */
+	if (stopping_)
+		emit finished(STOPPED);
+	else {
 		bool ok = status == 0 && qstatus == 0;
-		if (ok) {
-			keep_output = true;
-			finish_message = "Encoding finished successfully";
-			QMessageBox::information(frontend, "qtheorafeontend", finish_message);
-		}
-		else {
-			keep_output = frontend->cancel_ask("Encoding failed. ", false) == QMessageBox::Save;
-			finish_message = keep_output ?
-				QString("Encoding failed. Partial file kept") :
-				QString("Encoding failed. Partial file deleted");
-		}
+		emit finished(ok ? OK : FAILED);
 	}
-	if (!keep_output)
-		QFile(output_filename).remove();
-	emit statusUpdate(finish_message);
 	quit();
 }
 
 void
 Transcoder::run()
 {
-	finish_message = "";
-	keep_output = true;
-	proc.start(ffmpeg2theora(), QStringList() << "--frontend"
-		<< extra_args
-		<< "--output" << output_filename
-		<< input_filename);
+	position_ = eta_ = audio_b_ = video_b_ = -1;
+	stopping_ = false;
+	pass_ = extra_args_.contains("--two-pass") ? 0 : -1;
+	
+	proc_.start(ffmpeg2theora(), QStringList() << "--frontend"
+		<< extra_args_
+		<< "--output" << output_filename()
+		<< input_filename());
 
-	if (proc.waitForStarted())
+	if (proc_.waitForStarted())
 		exec();
 	else
 		emit statusUpdate("Encoding failed to start");
+}
+
+void
+Transcoder::processLine(const QString &line)
+{
+	if (line.startsWith("{")) {
+		QStringList sl = line.split(QRegExp("(\\{|,|\\})"), QString::SkipEmptyParts);
+		for (QStringList::iterator i = sl.begin(); i != sl.end(); ++i) {
+			QString key, value;
+			if (!parse_json_pair(*i, &key, &value))
+				continue;
+
+			if (key == "remaining")
+				eta_ = value.toDouble();
+			else if (key == "audio_kbps")
+				audio_b_ = value.toDouble();
+			else if (key == "video_kbps")
+				video_b_ = value.toDouble();
+			else if (key == "position")
+				position_ = value.toDouble();
+
+			if (pass_ == 0 && (audio_b_ > 0 || video_b_ > 0))
+				pass_ = 1;
+		}
+		emit statusUpdate(position_, eta_, audio_b_, video_b_, pass_);
+	} else
+		emit statusUpdate(line);
 }

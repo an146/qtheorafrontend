@@ -38,14 +38,25 @@ public:
 	void start(const QString &input, const QString &output, const QStringList & = QStringList());
 	static QString ffmpeg2theora();
 
+	QString input_filename() { return input_filename_; }
+	QString output_filename() { return output_filename_; }
+
+	enum {
+		OK,
+		FAILED,
+		STOPPED
+	};
 public slots:
-	void stop(bool keep);
+	void stop();
 
 signals:
 	void statusUpdate(QString status);
+	void statusUpdate(double pos, double eta, double audio_b, double video_b, int pass);
+	void finished(int reason);
 
 protected:
 	void run();
+	void processLine(const QString &);
 
 protected slots:
 	void readyRead();
@@ -55,13 +66,18 @@ signals:
 	void terminate();
 
 private:
-	QString input_filename;
-	QString output_filename;
-	QProcess proc;
-	QString finish_message;
-	bool keep_output;
-	Frontend *frontend;
-	QStringList extra_args;
+	QString input_filename_;
+	QString output_filename_;
+	QProcess proc_;
+	Frontend *frontend_;
+	QStringList extra_args_;
+	bool stopping_;
+
+	double position_;
+	double eta_;
+	double audio_b_;
+	double video_b_;
+	int pass_;
 };
 
 #endif // H_TRANSCODER

@@ -47,7 +47,10 @@ protected slots:
 	void transcode();
 	bool cancel();
 	void updateStatus(QString statusText);
+	void updateStatus(double pos, double eta, double audio_b, double video_b, int pass);
+	void finished(int reason);
 	void updateButtons();
+	void checkForSomethingToEncode();
 
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
@@ -76,6 +79,7 @@ private:
 	bool output_auto;
 	bool exitting;
 	bool input_valid;
+	bool keep_output;
 	FileInfo finfo;
 
 	Transcoder* transcoder;
