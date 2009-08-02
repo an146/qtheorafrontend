@@ -92,6 +92,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
 	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_bitrate, SLOT(setEnabled(bool)));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_two_pass, SLOT(setEnabled(bool)));
 	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
 	connect(ui.video_crop_left, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
 	connect(ui.video_crop_right, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
@@ -173,8 +174,10 @@ Frontend::transcode()
 		OPTION_VALUE("--videostream", video_stream);
 		if (ui.video_const_quality->isChecked())
 			OPTION_VALUE("--videoquality", video_quality);
-		else if (ui.video_const_bitrate->isChecked())
+		else if (ui.video_const_bitrate->isChecked()) {
 			OPTION_VALUE("--videobitrate", video_bitrate);
+			OPTION_FLAG("--two-pass", video_two_pass);
+		}
 		OPTION_VALUE("--width", video_width);
 		OPTION_VALUE("--height", video_height);
 		OPTION_FLAG("--max-size", video_max_size);
