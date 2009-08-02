@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include "fileinfo.h"
 #include "transcoder.h"
+#include "util.h"
 
 #define FIELDS \
 	FILE_FIELD(duration, .toDouble()) \
@@ -43,24 +44,6 @@
 \
 	ASTREAM_FIELD(samplerate, .toInt()) \
 	ASTREAM_FIELD(channels, .toInt()) \
-
-static QString
-untail(const QString &s, char c)
-{
-	QString ret = s.trimmed();
-	if (!ret.isEmpty() && ret[ret.size() - 1] == c)
-		ret.chop(1);
-	return ret;
-}
-
-static QString
-unquote(const QString &s)
-{
-	QString ret = s.trimmed();
-	if (!ret.isEmpty() && ret[0] == '"')
-		ret.remove(0, 1);
-	return untail(ret, '"');
-}
 
 #define BUF_SIZE 256
 
@@ -137,12 +120,9 @@ FileInfo::retrieve(const QString &filename)
 	char buf[BUF_SIZE] = "";
 	proc.waitForReadyRead();
 	while (proc.readLine(buf, BUF_SIZE) > 0) {
-		QStringList sl = untail(buf, ',').split(": ");
-		if (sl.size() < 2)
+		QString key, value;
+		if (!parse_json_pair(buf, &key, &value))
 			continue;
-		QString key = unquote(sl[0]);
-		QString value = unquote(sl[1]);
-
 		process_field(this, &state, key, value);
 		proc.waitForReadyRead();
 	}

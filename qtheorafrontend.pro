@@ -4,9 +4,9 @@ DEPENDPATH += .
 INCLUDEPATH += .
 
 # Input
-HEADERS += fileinfo.h frontend.h transcoder.h qtimespinbox.h
+HEADERS += fileinfo.h frontend.h transcoder.h qtimespinbox.h util.h
 FORMS += dialog.ui
-SOURCES += fileinfo.cpp frontend.cpp main.cpp transcoder.cpp qtimespinbox.cpp
+SOURCES += fileinfo.cpp frontend.cpp main.cpp transcoder.cpp qtimespinbox.cpp util.cpp
 RESOURCES += resources.qrc
 ICON += app.icns
 RC_FILE += resources.rc

@@ -24,6 +24,7 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include "frontend.h"
+#include "util.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
@@ -223,15 +224,18 @@ Frontend::updateStatus(QString statusText)
 	if (statusText.startsWith("{")) {
 		QStringList sl = statusText.split(QRegExp("(\\{|,|\\})"), QString::SkipEmptyParts);
 		for (QStringList::iterator i = sl.begin(); i != sl.end(); ++i) {
-			QStringList kv = i->split(": ");
-			if (kv[0].trimmed() == "\"duration\"") {
-				int v = (int)kv[1].toDouble();
+			QString key, value;
+			if (!parse_json_pair(*i, &key, &value))
+				continue;
+
+			if (key == "duration") {
+				int v = (int)value.toDouble();
 				ui.progress->setMaximum(v > 0 ? v : 0);
-			} else if (kv[0].trimmed() == "\"position\"") {
-				int v = (int)kv[1].toDouble();
+			} else if (key == "position") {
+				int v = (int)value.toDouble();
 				if (v < ui.progress->maximum())
 					ui.progress->setValue(v);
-			} else if (kv[0].trimmed() == "\"result\"")
+			} else if (key == "result")
 				ui.progress->setValue(ui.progress->maximum());
 		}
 	}
