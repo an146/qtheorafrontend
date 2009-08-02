@@ -72,6 +72,7 @@ protected slots:
 	void ycropChanged();
 	void videoWidthChanged();
 	void videoHeightChanged();
+	void updateSoftTargetQuality();
 
 private:
 	Ui::Dialog ui;

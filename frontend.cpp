@@ -98,6 +98,9 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_bitrate, SLOT(setEnabled(bool)));
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_two_pass, SLOT(setEnabled(bool)));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_soft_target, SLOT(setEnabled(bool)));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateSoftTargetQuality()));
+	connect(ui.video_soft_target, SIGNAL(toggled(bool)), this, SLOT(updateSoftTargetQuality()));
 	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
 	connect(ui.video_crop_left, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
 	connect(ui.video_crop_right, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
@@ -154,13 +157,18 @@ Frontend::transcode()
 	QStringList ea;
 
 #define OPTION(opt) ea = ea << opt
-#define OPTION_FLAG(opt, widget) if (ui.widget->isChecked()) OPTION(opt)
-#define OPTION_VALUE(opt, widget) ea = ea << opt << widget_value(ui.widget)
-#define OPTION_DEFVALUE(opt, widget) if (ui.widget->currentIndex() > 0) OPTION_VALUE(opt, widget)
-	if (ui.partial->isChecked()) {
-		OPTION_VALUE("--starttime", partial_start);
-		OPTION_VALUE("--endtime", partial_end);
-	}
+#define OPTION_FLAG(opt, widget) \
+	if (ui.widget->isEnabled() && ui.widget->isChecked()) \
+		OPTION(opt)
+#define OPTION_VALUE(opt, widget) \
+	if (ui.widget->isEnabled()) \
+		ea = ea << opt << widget_value(ui.widget)
+#define OPTION_DEFVALUE(opt, widget) \
+	if (ui.widget->currentIndex() > 0) \
+		OPTION_VALUE(opt, widget)
+
+	OPTION_VALUE("--starttime", partial_start);
+	OPTION_VALUE("--endtime", partial_end);
 	OPTION_FLAG("--sync", sync);
 	OPTION_FLAG("--no-skeleton", no_skeleton);
 
@@ -168,21 +176,19 @@ Frontend::transcode()
 		OPTION_VALUE("--audiostream", audio_stream);
 		OPTION_VALUE("--channels", audio_channels);
 		OPTION_VALUE("--samplerate", audio_samplerate);
-		if (ui.audio_const_quality->isChecked())
-			OPTION_VALUE("--audioquality", audio_quality);
-		else if (ui.audio_const_bitrate->isChecked())
-			OPTION_VALUE("--audiobitrate", audio_bitrate);
+		OPTION_VALUE("--audioquality", audio_quality);
+		OPTION_VALUE("--audiobitrate", audio_bitrate);
 	} else
 		OPTION("--noaudio");
 
 	if (ui.video_encode->isChecked()) {
 		OPTION_VALUE("--videostream", video_stream);
-		if (ui.video_const_quality->isChecked())
-			OPTION_VALUE("--videoquality", video_quality);
-		else if (ui.video_const_bitrate->isChecked()) {
-			OPTION_VALUE("--videobitrate", video_bitrate);
-			OPTION_FLAG("--two-pass", video_two_pass);
-		}
+		OPTION_VALUE("--videoquality", video_quality);
+		OPTION_VALUE("--videobitrate", video_bitrate);
+		OPTION_FLAG("--two-pass", video_two_pass);
+		OPTION_FLAG("--soft-target", video_soft_target);
+		OPTION_VALUE("-v", video_soft_target_quality);
+
 		OPTION_VALUE("--width", video_width);
 		OPTION_VALUE("--height", video_height);
 		OPTION_FLAG("--max-size", video_max_size);
@@ -939,4 +945,10 @@ Frontend::videoHeightChanged()
 {
 	if (ui.video_height->hasFocus())
 		fixVideoWidth();
+}
+
+void
+Frontend::updateSoftTargetQuality()
+{
+	ui.video_soft_target_quality->setEnabled(ui.video_const_bitrate->isChecked() && ui.video_soft_target->isChecked());
 }
