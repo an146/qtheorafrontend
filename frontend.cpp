@@ -119,6 +119,9 @@ Frontend::Frontend(QWidget* parent)
 	ui.video_st_quality->setValue(DEFAULT_VIDEO_QUALITY);
 	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, ui.video_bitrate));
 
+	/* Metadata */
+	connect(ui.metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
+
 	retrieveInfo();
 }
 
@@ -170,6 +173,9 @@ Frontend::transcode()
 #define OPTION_DEFVALUE(opt, widget) \
 	if (ui.widget->currentIndex() > 0) \
 		OPTION_VALUE(opt, widget)
+#define OPTION_TEXT(opt, widget) \
+	if (!ui.widget->text().isEmpty()) \
+		OPTION_VALUE(opt, widget)
 
 	OPTION_VALUE("--starttime", partial_start);
 	OPTION_VALUE("--endtime", partial_end);
@@ -207,10 +213,22 @@ Frontend::transcode()
 		OPTION_DEFVALUE("--framerate", video_output_framerate);
 	} else
 		OPTION("--novideo");
+
+	if (ui.metadata_add->isChecked()) {
+		OPTION_TEXT("--artist", metadata_artist);
+		OPTION_TEXT("--title", metadata_title);
+		OPTION_TEXT("--date", metadata_date);
+		OPTION_TEXT("--location", metadata_location);
+		OPTION_TEXT("--organization", metadata_organization);
+		OPTION_TEXT("--copyright", metadata_copyright);
+		OPTION_TEXT("--license", metadata_license);
+		OPTION_TEXT("--contact", metadata_contact);
+	}
 #undef OPTION
 #undef OPTION_FLAG
 #undef OPTION_VALUE
 #undef OPTION_DEFVALUE
+#undef OPTION_TEXT
 
 	ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
@@ -549,6 +567,7 @@ Frontend::retrieveInfo()
 	updateInfo();
 	updateAudio();
 	updateVideo(true);
+	updateMetadata(true);
 }
 
 void
@@ -647,6 +666,14 @@ Frontend::updateVideo(bool another_file)
 		ui.video_crop_top->setMaximum(s->height);
 		ui.video_crop_bottom->setMaximum(s->height);
 	}
+}
+
+void
+Frontend::updateMetadata(bool another_file)
+{
+	if (another_file)
+		ui.metadata_add->setChecked(false);
+	layout_enable(ui.metadata_options_layout, ui.metadata_add->isChecked());
 }
 
 void

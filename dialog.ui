@@ -1493,6 +1493,117 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="metadata">
+      <attribute name="title">
+       <string>Metadata</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <widget class="QCheckBox" name="metadata_add">
+         <property name="text">
+          <string>Add Metadata</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="metadata_options_layout">
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_34">
+           <property name="text">
+            <string>Location:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_33">
+           <property name="text">
+            <string>Title:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLineEdit" name="metadata_artist"/>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLineEdit" name="metadata_title"/>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_32">
+           <property name="text">
+            <string>Date:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QLineEdit" name="metadata_date"/>
+         </item>
+         <item row="3" column="2">
+          <widget class="QLineEdit" name="metadata_location"/>
+         </item>
+         <item row="8" column="2">
+          <spacer name="verticalSpacer_11">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_35">
+           <property name="text">
+            <string>Artist:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QLineEdit" name="metadata_organization"/>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_36">
+           <property name="text">
+            <string>Organization:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_37">
+           <property name="text">
+            <string>Copyright:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_38">
+           <property name="text">
+            <string>License:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_39">
+           <property name="text">
+            <string>Contact:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <widget class="QLineEdit" name="metadata_copyright"/>
+         </item>
+         <item row="6" column="2">
+          <widget class="QLineEdit" name="metadata_license"/>
+         </item>
+         <item row="7" column="2">
+          <widget class="QLineEdit" name="metadata_contact"/>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

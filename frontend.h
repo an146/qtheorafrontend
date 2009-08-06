@@ -64,6 +64,7 @@ protected slots:
 	void updateInfo();
 	void updateAudio();
 	void updateVideo(bool another_file = false);
+	void updateMetadata(bool another_file = false);
 	double cropped_aspect() const;
 	void fixVideoWidth();
 	void fixVideoHeight();
