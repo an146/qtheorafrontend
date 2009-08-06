@@ -42,7 +42,6 @@ Frontend::Frontend(QWidget* parent)
 	: QDialog(parent),
 	input_dlg(this, "Select the input file", QString(), input_filter()),
 	output_dlg(this, "Select the output file", QString(), "*.*"),
-	output_auto(true),
 	exitting(false),
 	input_valid(false)
 {
@@ -66,7 +65,6 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.output_select, SIGNAL(released()), this, SLOT(selectOutput()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(retrieveInfo()));
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(outputChanged()));
-	connect(ui.output, SIGNAL(textEdited(QString)), this, SLOT(outputEdited()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(ui.cancel, SIGNAL(released()), this, SLOT(cancel()));
 	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
@@ -322,6 +320,8 @@ Frontend::updateButtons()
 	bool encode = encode_audio() || encode_video();
 	bool can_start = !running && !missing_data && encode && input_valid;
 
+	ui.output_select->setEnabled(input_valid);
+	ui.output->setEnabled(input_valid);
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
@@ -363,12 +363,6 @@ Frontend::outputChanged()
 	updateButtons();
 }
 
-void
-Frontend::outputEdited()
-{
-	output_auto = ui.output->text().isEmpty();
-}
-
 /* returns a QDir that != dir */
 
 static QDir
@@ -404,9 +398,6 @@ clear_filedialog_selection(QFileDialog *dlg)
 void
 Frontend::setDefaultOutput()
 {
-	if (!output_auto)
-		return;
-
 	QString s = ui.input->text();
 	if (s.isEmpty())
 		return;

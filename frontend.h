@@ -55,7 +55,6 @@ protected slots:
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
 	void outputChanged();
-	void outputEdited();
 	void partialStateChanged();
 	void setDefaultOutput();
 	void fixExtension();
