@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <QPlastiqueStyle>
 #include "frontend.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
@@ -46,6 +47,7 @@ Frontend::Frontend(QWidget* parent)
 	input_valid(false)
 {
 	ui.setupUi(this);
+	ui.progress->setStyle(new QPlastiqueStyle());
 	transcoder = new Transcoder(this);
 	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
