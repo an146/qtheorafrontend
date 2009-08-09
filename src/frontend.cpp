@@ -58,6 +58,7 @@ Frontend::Frontend(QWidget* parent)
 
 	input_dlg.setOption(QFileDialog::HideNameFilterDetails);
 	input_dlg.setFileMode(QFileDialog::ExistingFile);
+	output_dlg.setOption(QFileDialog::DontConfirmOverwrite);
 	output_dlg.setAcceptMode(QFileDialog::AcceptSave);
 	output_dlg.setFileMode(QFileDialog::AnyFile);
 	connect(&input_dlg, SIGNAL(fileSelected(QString)), this, SLOT(inputSelected(QString)));
@@ -163,6 +164,14 @@ static QString widget_value(QLineEdit *w)      { return w->text(); }
 void
 Frontend::transcode()
 {
+	if (QFileInfo(ui.output->text()).exists()) {
+		if (QMessageBox::warning(this, "Overwrite file?",
+			"The output file already exists. Do you want to replace it?",
+			QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes
+		)
+			return;
+	}
+
 	QStringList ea;
 
 #define OPTION(opt) ea = ea << opt
