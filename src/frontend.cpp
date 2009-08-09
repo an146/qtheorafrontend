@@ -24,6 +24,7 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QPlastiqueStyle>
+#include <QSettings>
 #include "frontend.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
@@ -159,6 +160,7 @@ Frontend::Frontend(QWidget* parent)
 	/* Metadata */
 	connect(ui.metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
 
+	readSettings();
 	retrieveInfo();
 	updateAdvancedMode();
 }
@@ -181,9 +183,10 @@ Frontend::cancel_ask(const QString &reason, bool cancel_button)
 void
 Frontend::closeEvent(QCloseEvent *event)
 {
-	if (!transcoder->isRunning())
+	if (!transcoder->isRunning()) {
+		writeSettings();
 		event->accept();
-	else {
+	} else {
 		if (cancel())
 			exitting = true;
 		event->ignore();
@@ -1082,4 +1085,25 @@ Frontend::resetAdjust()
 	ui.advanced_brightness->setValue(int(0.0 * ADJUST_SCALE));
 	ui.advanced_gamma->setValue(int(1.0 * ADJUST_SCALE));
 	ui.advanced_saturation->setValue(int(1.0 * ADJUST_SCALE));
+}
+
+void
+Frontend::readSettings()
+{
+	QSettings settings("QTheoraFrontend team", "QTheoraFrontend");
+	QPoint pos = settings.value("pos", QPoint(200, 200)).toPoint();
+	QSize size = settings.value("size", QSize(400, 300)).toSize();
+	bool adv = settings.value("advanced_mode", false).toBool();
+	resize(size);
+	move(pos);
+	ui.advanced_mode->setChecked(adv);
+}
+
+void
+Frontend::writeSettings()
+{
+	QSettings settings("QTheoraFrontend team", "QTheoraFrontend");
+	settings.setValue("pos", pos());
+	settings.setValue("size", size());
+	settings.setValue("advanced_mode", ui.advanced_mode->isChecked());
 }

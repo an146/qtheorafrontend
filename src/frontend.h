@@ -76,6 +76,9 @@ protected slots:
 	void updateSoftTarget();
 	void resetAdjust();
 
+	void readSettings();
+	void writeSettings();
+
 private:
 	Ui::Dialog ui;
 	QFileDialog input_dlg, output_dlg;
