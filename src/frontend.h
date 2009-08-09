@@ -55,7 +55,6 @@ protected slots:
 	void inputSelected(const QString &);
 	void outputSelected(const QString &);
 	void outputChanged();
-	void partialStateChanged();
 	void setDefaultOutput();
 	void fixExtension();
 	void selectOutput();
@@ -64,6 +63,7 @@ protected slots:
 	void updateInfo();
 	void updateAudio();
 	void updateVideo(bool another_file = false);
+	void updateAdvanced(bool another_file = false);
 	void updateMetadata(bool another_file = false);
 	double cropped_aspect() const;
 	void fixVideoWidth();
@@ -73,6 +73,7 @@ protected slots:
 	void videoWidthChanged();
 	void videoHeightChanged();
 	void updateSoftTarget();
+	void resetAdjust();
 
 private:
 	Ui::Dialog ui;

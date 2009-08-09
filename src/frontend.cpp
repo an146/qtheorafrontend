@@ -28,16 +28,42 @@
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
-#define DEFAULT_AUDIO_QUALITY 1
-#define DEFAULT_VIDEO_QUALITY 5
-
 #define MIN_BITRATE 1
 #define MAX_BITRATE 16778
+#define MIN_KEYINT 1
+#define MAX_KEYINT 2147483647
+#define MIN_BDELAY 1
+#define MAX_BDELAY 2147483647
+#define ADJUST_SCALE 10.0
 
 /* a year will do :) */
 #define MAX_TIME (365 * 24 * 3600)
 
+#define DEPEND(wdep, w) ui.wdep->setEnabled(ui.w->isEnabled() && ui.w->isChecked())
+#define DEPEND_CONNECT(wdep, w) connect(ui.w, SIGNAL(toggled(bool)), ui.wdep, SLOT(setEnabled(bool)));
+
 static QString input_filter();
+
+static void
+activate_layout(QWidget *widget)
+{
+	QWidget *parent = qobject_cast<QWidget *>(widget->parent());
+	if (parent == NULL)
+		return;
+	activate_layout(parent);
+	if (parent->layout() != NULL)
+		parent->layout()->activate();
+}
+
+static void
+set_label_min_size(QLabel *label, QString text)
+{
+	QString prev_text = label->text();
+	label->setText(text);
+	activate_layout(label);
+	label->setMinimumSize(label->size());
+	label->setText(prev_text);
+}
 
 Frontend::Frontend(QWidget* parent)
 	: QDialog(parent),
@@ -70,10 +96,11 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(outputChanged()));
 	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
 	connect(ui.cancel, SIGNAL(released()), this, SLOT(cancel()));
-	connect(ui.partial, SIGNAL(stateChanged(int)), this, SLOT(partialStateChanged()));
 	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
 	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
 	connect(ui.no_skeleton, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
+	DEPEND_CONNECT(partial_start, partial);
+	DEPEND_CONNECT(partial_end, partial);
 
 	/* Info */
 	connect(ui.info_audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
@@ -83,25 +110,23 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
 	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
-	connect(ui.audio_const_quality, SIGNAL(toggled(bool)), ui.audio_quality, SLOT(setEnabled(bool)));
-	connect(ui.audio_const_bitrate, SIGNAL(toggled(bool)), ui.audio_bitrate, SLOT(setEnabled(bool)));
 	connect(ui.audio_quality, SIGNAL(valueChanged(int)), ui.audio_quality_label, SLOT(setNum(int)));
-	ui.audio_quality->setValue(10); // setting the widest label
-	ui.audio_encoding_mode->layout()->activate();
-	ui.audio_quality_label->setMinimumSize(ui.audio_quality_label->size());
-	ui.audio_quality->setValue(DEFAULT_AUDIO_QUALITY);
+	DEPEND_CONNECT(audio_quality, audio_const_quality);
+	DEPEND_CONNECT(audio_bitrate, audio_const_bitrate);
+	set_label_min_size(ui.audio_quality_label, "10");
 
 	/* Video */
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateVideo()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
-	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality, SLOT(setEnabled(bool)));
-	connect(ui.video_const_quality, SIGNAL(toggled(bool)), ui.video_quality_label, SLOT(setEnabled(bool)));
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_bitrate, SLOT(setEnabled(bool)));
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_two_pass, SLOT(setEnabled(bool)));
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), ui.video_st, SLOT(setEnabled(bool)));
+	DEPEND_CONNECT(video_quality, video_const_quality);
+	DEPEND_CONNECT(video_quality_label, video_const_quality);
+	DEPEND_CONNECT(video_bitrate, video_const_bitrate);
+	DEPEND_CONNECT(video_two_pass, video_const_bitrate);
+	DEPEND_CONNECT(video_st, video_const_bitrate);
 	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
+	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateAdvanced()));
 	connect(ui.video_st, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
 	connect(ui.video_st_quality_on, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
 	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
@@ -113,14 +138,22 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_width, SIGNAL(valueChanged(int)), this, SLOT(videoWidthChanged()));
 	connect(ui.video_height, SIGNAL(valueChanged(int)), this, SLOT(videoHeightChanged()));
 	connect(ui.video_keep_proportions, SIGNAL(toggled(bool)), this, SLOT(fixVideoHeight()));
-	ui.video_quality->setValue(10); // setting the widest label
-	ui.video_st_quality->setValue(10);
-	ui.video_encoding_mode->layout()->activate();
-	ui.video_quality_label->setMinimumSize(ui.video_quality_label->size());
-	ui.video_st_quality_label->setMinimumSize(ui.video_quality_label->size());
-	ui.video_quality->setValue(DEFAULT_VIDEO_QUALITY);
-	ui.video_st_quality->setValue(DEFAULT_VIDEO_QUALITY);
+	set_label_min_size(ui.video_quality_label, "10");
+	set_label_min_size(ui.video_st_quality_label, "10");
 	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, ui.video_bitrate));
+
+	/* Advanced */
+	connect(ui.advanced_contrast, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui.advanced_brightness, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui.advanced_gamma, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui.advanced_saturation, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui.advanced_adjust_reset, SIGNAL(released()), this, SLOT(resetAdjust()));
+	DEPEND_CONNECT(advanced_keyint_value, advanced_keyint);
+	DEPEND_CONNECT(advanced_format_value, advanced_format);
+	DEPEND_CONNECT(advanced_bdelay_value, advanced_bdelay);
+	set_label_min_size(ui.advanced_contrast_label, "10.0");
+	ui.advanced_keyint_value->setValidator(new QIntValidator(MIN_KEYINT, MAX_KEYINT, ui.advanced_keyint_value));
+	ui.advanced_bdelay_value->setValidator(new QIntValidator(MIN_BDELAY, MAX_BDELAY, ui.advanced_bdelay_value));
 
 	/* Metadata */
 	connect(ui.metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
@@ -160,6 +193,7 @@ static QString widget_value(QDoubleSpinBox *w) { return QString::number(w->value
 static QString widget_value(QSlider *w)        { return QString::number(w->value()); }
 static QString widget_value(QComboBox *w)      { return w->currentText(); }
 static QString widget_value(QLineEdit *w)      { return w->text(); }
+static QString widget_value(QLabel *w)         { return w->text(); }
 
 void
 Frontend::transcode()
@@ -224,6 +258,15 @@ Frontend::transcode()
 		OPTION_DEFVALUE("--framerate", video_output_framerate);
 	} else
 		OPTION("--novideo");
+
+	OPTION_VALUE("--contrast", advanced_contrast_label);
+	OPTION_VALUE("--brightness", advanced_brightness_label);
+	OPTION_VALUE("--gamma", advanced_gamma_label);
+	OPTION_VALUE("--saturation", advanced_saturation_label);
+	OPTION_FLAG("--no-upscaling", advanced_no_upscaling);
+	OPTION_VALUE("--keyint", advanced_keyint_value);
+	OPTION_TEXT("--format", advanced_format_value);
+	OPTION_VALUE("--buf-delay", advanced_bdelay_value);
 
 	if (ui.metadata_add->isChecked()) {
 		OPTION_TEXT("--artist", metadata_artist);
@@ -362,8 +405,9 @@ Frontend::updateButtons()
 		ui.progress->setMaximum(100);
 		ui.progress->reset();
 	}
-	partialStateChanged();
 	checkForSomethingToEncode();
+	DEPEND(partial_start, partial);
+	DEPEND(partial_end, partial);
 	if (exitting)
 		close();
 }
@@ -619,7 +663,7 @@ static const int bitrates[] = {
 
 #define select_last(c) c->setCurrentIndex(c->count() - 1)
 
-/* recursively enable/disable all widgets in a layout */
+/* recursively enable/disable all first-level widgets in a layout */
 
 static void
 layout_enable(QLayout *layout, bool enabled)
@@ -682,6 +726,22 @@ Frontend::updateVideo(bool another_file)
 		ui.video_crop_top->setMaximum(s->height);
 		ui.video_crop_bottom->setMaximum(s->height);
 	}
+	updateAdvanced(another_file);
+}
+
+void
+Frontend::updateAdvanced(bool another_file)
+{
+	if (another_file)
+		ui.advanced_adjust->setChecked(false);
+	ui.advanced_contrast_label->setText(QString().sprintf("%.1f", ui.advanced_contrast->value() / ADJUST_SCALE));
+	ui.advanced_brightness_label->setText(QString().sprintf("%.1f", ui.advanced_brightness->value() / ADJUST_SCALE));
+	ui.advanced_gamma_label->setText(QString().sprintf("%.1f", ui.advanced_gamma->value() / ADJUST_SCALE));
+	ui.advanced_saturation_label->setText(QString().sprintf("%.1f", ui.advanced_saturation->value() / ADJUST_SCALE));
+	DEPEND(advanced_adjust, video_encode);
+	DEPEND(advanced_keyint, video_encode);
+	DEPEND(advanced_bdelay, video_const_bitrate);
+	DEPEND(advanced_bdelay_value, advanced_bdelay);
 }
 
 void
@@ -690,13 +750,6 @@ Frontend::updateMetadata(bool another_file)
 	if (another_file)
 		ui.metadata_add->setChecked(false);
 	layout_enable(ui.metadata_options_layout, ui.metadata_add->isChecked());
-}
-
-void
-Frontend::partialStateChanged()
-{
-	ui.partial_start->setEnabled(ui.partial->checkState());
-	ui.partial_end->setEnabled(ui.partial->checkState());
 }
 
 QString
@@ -1000,8 +1053,16 @@ Frontend::videoHeightChanged()
 void
 Frontend::updateSoftTarget()
 {
-	ui.video_st_quality_on->setEnabled(ui.video_st->isEnabled() && ui.video_st->isChecked());
-	bool quality_enabled = ui.video_st_quality_on->isEnabled() && ui.video_st_quality_on->isChecked();
-	ui.video_st_quality->setEnabled(quality_enabled);
-	ui.video_st_quality_label->setEnabled(quality_enabled);
+	DEPEND(video_st_quality_on, video_st);
+	DEPEND(video_st_quality, video_st_quality_on);
+	DEPEND(video_st_quality_label, video_st_quality_on);
+}
+
+void
+Frontend::resetAdjust()
+{
+	ui.advanced_contrast->setValue(int(1.0 * ADJUST_SCALE));
+	ui.advanced_brightness->setValue(int(0.0 * ADJUST_SCALE));
+	ui.advanced_gamma->setValue(int(1.0 * ADJUST_SCALE));
+	ui.advanced_saturation->setValue(int(1.0 * ADJUST_SCALE));
 }
