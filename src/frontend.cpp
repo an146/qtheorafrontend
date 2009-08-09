@@ -345,7 +345,9 @@ void
 Frontend::updateButtons()
 {
 	bool running = transcoder->isRunning();
-	bool missing_data = ui.input->text().isEmpty() || ui.output->text().isEmpty();
+	bool missing_data = ui.input->text().isEmpty() ||
+		ui.output->text().isEmpty() ||
+		ui.input->text() == ui.output->text();
 	bool encode = encode_audio() || encode_video();
 	bool can_start = !running && !missing_data && encode && input_valid;
 
@@ -361,6 +363,7 @@ Frontend::updateButtons()
 		ui.progress->reset();
 	}
 	partialStateChanged();
+	checkForSomethingToEncode();
 	if (exitting)
 		close();
 }
@@ -368,11 +371,13 @@ Frontend::updateButtons()
 void
 Frontend::checkForSomethingToEncode()
 {
-	if (!transcoder->isRunning()) {
-		if (encode_audio() || encode_video())
-			updateStatus("");
-		else
+	if (!transcoder->isRunning() && input_valid) {
+		if (!encode_audio() && !encode_video())
 			updateStatus("Nothing to encode");
+		else if (ui.input->text() == ui.output->text())
+			updateStatus("Input and output filenames must differ");
+		else
+			updateStatus("");
 	}
 }
 
