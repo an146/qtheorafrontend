@@ -18,6 +18,9 @@
     <normaloff>:/app.png</normaloff>:/app.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="sizeConstraint">
+    <enum>QLayout::SetDefaultConstraint</enum>
+   </property>
    <item>
     <layout class="QGridLayout" name="gridLayout_1">
      <item row="0" column="0">
@@ -77,6 +80,22 @@
       <widget class="QPushButton" name="cancel">
        <property name="text">
         <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="advanced_mode">
+       <property name="text">
+        <string>Advanced mode</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+       <property name="arrowType">
+        <enum>Qt::UpArrow</enum>
        </property>
       </widget>
      </item>
@@ -183,7 +202,7 @@
     </spacer>
    </item>
    <item>
-    <widget class="QTabWidget" name="tabWidget">
+    <widget class="QTabWidget" name="tabs">
      <property name="currentIndex">
       <number>0</number>
      </property>

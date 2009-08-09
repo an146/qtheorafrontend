@@ -90,6 +90,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(&input_dlg, SIGNAL(fileSelected(QString)), this, SLOT(inputSelected(QString)));
 	connect(&output_dlg, SIGNAL(fileSelected(QString)), this, SLOT(outputSelected(QString)));
 
+	connect(ui.advanced_mode, SIGNAL(toggled(bool)), this, SLOT(updateAdvancedMode()));
 	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
 	connect(ui.output_select, SIGNAL(released()), this, SLOT(selectOutput()));
 	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(retrieveInfo()));
@@ -159,6 +160,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
 
 	retrieveInfo();
+	updateAdvancedMode();
 }
 
 int
@@ -369,6 +371,21 @@ Frontend::finished(int reason)
 	if (!keep_output)
 		QFile(transcoder->output_filename()).remove();
 	emit updateStatus(finish_message);
+}
+
+void
+Frontend::updateAdvancedMode()
+{
+	bool adv = ui.advanced_mode->isChecked();
+	ui.advanced_mode->setArrowType(adv ? Qt::DownArrow : Qt::UpArrow);
+	ui.partial->setVisible(adv);
+	ui.partial_start->setVisible(adv);
+	ui.partial_end->setVisible(adv);
+	ui.sync->setVisible(adv);
+	ui.no_skeleton->setVisible(adv);
+	ui.tabs->setVisible(adv);
+	layout()->activate();
+	resize(QSize(width(), minimumSize().height()));
 }
 
 void
