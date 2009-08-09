@@ -1,15 +1,21 @@
 TEMPLATE = app
 TARGET = 
 DEPENDPATH += .
-INCLUDEPATH += .
+INCLUDEPATH += src
+
+OBJECTS_DIR = build
+MOC_DIR = build
+UI_DIR = build
+RCC_DIR = build
+QMAKE_LINK_OBJECT_SCRIPT = build/object_script
 
 # Input
-HEADERS += fileinfo.h frontend.h transcoder.h qtimespinbox.h util.h
-FORMS += dialog.ui
-SOURCES += fileinfo.cpp frontend.cpp main.cpp transcoder.cpp qtimespinbox.cpp util.cpp
-RESOURCES += resources.qrc
-ICON += app.icns
-RC_FILE += resources.rc
+HEADERS += src/fileinfo.h src/frontend.h src/transcoder.h src/qtimespinbox.h src/util.h
+FORMS += src/dialog.ui
+SOURCES += src/fileinfo.cpp src/frontend.cpp src/main.cpp src/transcoder.cpp src/qtimespinbox.cpp src/util.cpp
+RESOURCES += src/resources.qrc
+ICON += src/app.icns
+RC_FILE += src/resources.rc
 
 # Install
 target.path = $$(PREFIX)/bin
