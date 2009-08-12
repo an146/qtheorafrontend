@@ -328,7 +328,11 @@ Frontend::transcode()
 #undef OPTION_DEFVALUE
 #undef OPTION_TEXT
 
-	ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
+	if (ui.partial->isChecked()) {
+		double duration = ui.partial_end->value() - ui.partial_start->value();
+		ui.progress->setMaximum((int)duration);
+	} else
+		ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
 	transcoder->start(ui.input->text(), ui.output->text(), ea);
 }
 
