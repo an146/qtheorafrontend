@@ -21,6 +21,7 @@
  */
 
 #include <stdexcept>
+#include <cstring>
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QPlastiqueStyle>
@@ -64,6 +65,39 @@ set_label_min_size(QLabel *label, QString text)
 	activate_layout(label);
 	label->setMinimumSize(label->size());
 	label->setText(prev_text);
+}
+
+static const char * const framerates[] = {
+	"5",
+	"10",
+	"12",
+	"15",
+	"24000:1001",   // 23.976
+	"24",
+	"25",
+	"30000:1001",   // 29.97
+	"50",
+	"60000:1001",   // 59.94
+	"100",
+	"120000:1001",  // 119.88
+	"120"
+};
+
+static void
+setup_framerates(QComboBox *combo, QString def)
+{
+	combo->addItem(def);
+	for (int i = 0; i < LENGTH(framerates); i++) {
+		const char *f = framerates[i];
+		const char *colon = strchr(f, ':');
+		if (colon == NULL)
+			combo->addItem(f);
+		else {
+			char buf[32];
+			sprintf(buf, "%.3f", atoi(f) / (double)atoi(colon + 1));
+			combo->addItem(QString(buf).remove(QRegExp("0*$")));
+		}
+	}
 }
 
 Frontend::Frontend(QWidget* parent)
@@ -118,6 +152,8 @@ Frontend::Frontend(QWidget* parent)
 	set_label_min_size(ui.audio_quality_label, "10");
 
 	/* Video */
+	setup_framerates(ui.video_input_framerate, "Autodetect");
+	setup_framerates(ui.video_output_framerate, "Same as source");
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateVideo()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
 	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
@@ -223,6 +259,9 @@ Frontend::transcode()
 #define OPTION_DEFVALUE(opt, widget) \
 	if (ui.widget->currentIndex() > 0) \
 		OPTION_VALUE(opt, widget)
+#define OPTION_FRAMERATE(opt, widget) \
+	if (ui.widget->currentIndex() > 0) \
+		ea = ea << opt << framerates[ui.widget->currentIndex() - 1];
 #define OPTION_TEXT(opt, widget) \
 	if (!ui.widget->text().isEmpty()) \
 		OPTION_VALUE(opt, widget)
@@ -259,8 +298,8 @@ Frontend::transcode()
 		OPTION_VALUE("--cropright", video_crop_right);
 		OPTION_FLAG("--optimize", video_optimize);
 		OPTION_FLAG("--deinterlace", video_deinterlace);
-		OPTION_DEFVALUE("--inputfps", video_input_framerate);
-		OPTION_DEFVALUE("--framerate", video_output_framerate);
+		OPTION_FRAMERATE("--inputfps", video_input_framerate);
+		OPTION_FRAMERATE("--framerate", video_output_framerate);
 	} else
 		OPTION("--novideo");
 
