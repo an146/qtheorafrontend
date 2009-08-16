@@ -122,7 +122,7 @@ Frontend::Frontend(QWidget* parent)
 	output_dlg.setOption(QFileDialog::DontConfirmOverwrite);
 	output_dlg.setAcceptMode(QFileDialog::AcceptSave);
 	output_dlg.setFileMode(QFileDialog::AnyFile);
-	connect(&input_dlg, SIGNAL(fileSelected(QString)), this, SLOT(inputSelected(QString)));
+	connect(&input_dlg, SIGNAL(fileSelected(QString)), ui.input, SLOT(setText(QString)));
 	connect(&output_dlg, SIGNAL(fileSelected(QString)), this, SLOT(outputSelected(QString)));
 
 	connect(ui.advanced_mode, SIGNAL(toggled(bool)), this, SLOT(updateAdvancedMode()));
@@ -432,12 +432,6 @@ Frontend::updateAdvancedMode()
 	ui.tabs->setVisible(adv);
 	layout()->activate();
 	resize(QSize(width(), minimumSize().height()));
-}
-
-void
-Frontend::inputSelected(const QString &s)
-{
-	ui.input->setText(s);
 }
 
 void

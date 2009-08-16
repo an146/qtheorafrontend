@@ -53,7 +53,6 @@ protected slots:
 	void checkForSomethingToEncode();
 
 	void updateAdvancedMode();
-	void inputSelected(const QString &);
 	void outputSelected(const QString &);
 	void outputChanged();
 	void setDefaultOutput();
