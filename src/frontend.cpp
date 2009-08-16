@@ -198,7 +198,7 @@ Frontend::Frontend(QWidget* parent)
 	connect(ui.video_keep_proportions, SIGNAL(toggled(bool)), this, SLOT(fixVideoHeight()));
 	set_label_min_size(ui.video_quality_label, "10");
 	set_label_min_size(ui.video_st_quality_label, "10");
-	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, ui.video_bitrate));
+	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, this));
 
 	/* Subtitles */
 	subtitles_dlg.setFileMode(QFileDialog::ExistingFile);
@@ -223,8 +223,8 @@ Frontend::Frontend(QWidget* parent)
 	DEPEND_CONNECT(advanced_format_value, advanced_format);
 	DEPEND_CONNECT(advanced_bdelay_value, advanced_bdelay);
 	set_label_min_size(ui.advanced_contrast_label, "10.0");
-	ui.advanced_keyint_value->setValidator(new QIntValidator(MIN_KEYINT, MAX_KEYINT, ui.advanced_keyint_value));
-	ui.advanced_bdelay_value->setValidator(new QIntValidator(MIN_BDELAY, MAX_BDELAY, ui.advanced_bdelay_value));
+	ui.advanced_keyint_value->setValidator(new QIntValidator(MIN_KEYINT, MAX_KEYINT, this));
+	ui.advanced_bdelay_value->setValidator(new QIntValidator(MIN_BDELAY, MAX_BDELAY, this));
 
 	/* Metadata */
 	connect(ui.metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
