@@ -83,6 +83,25 @@ static const char * const framerates[] = {
 	"120"
 };
 
+static const char *lang_codes[] = {
+	"aa", "ab", "ae", "af", "ak", "am", "an", "ar", "as", "av", "ay", "az",
+	"ba", "be", "bg", "bh", "bi", "bm", "bn", "bo", "br", "bs", "ca", "ce",
+	"ch", "co", "cr", "cs", "cu", "cv", "cy", "da", "de", "dv", "dz", "ee",
+	"el", "en", "eo", "es", "et", "eu", "fa", "ff", "fi", "fj", "fo", "fr",
+	"fy", "ga", "gd", "gl", "gn", "gu", "gv", "ha", "he", "hi", "ho", "hr",
+	"ht", "hu", "hy", "hz", "ia", "id", "ie", "ig", "ii", "ik", "io", "is",
+	"it", "iu", "ja", "jv", "ka", "kg", "ki", "kj", "kk", "kl", "km", "kn",
+	"ko", "kr", "ks", "ku", "kv", "kw", "ky", "la", "lb", "lg", "li", "ln",
+	"lo", "lt", "lu", "lv", "mg", "mh", "mi", "mk", "ml", "mn", "mr", "ms",
+	"mt", "my", "na", "nb", "nd", "ne", "ng", "nl", "nn", "no", "nr", "nv",
+	"ny", "oc", "oj", "om", "or", "os", "pa", "pi", "pl", "ps", "pt", "qu",
+	"rm", "rn", "ro", "ru", "rw", "sa", "sc", "sd", "se", "sg", "si", "sk",
+	"sl", "sm", "sn", "so", "sq", "sr", "ss", "st", "su", "sv", "sw", "ta",
+	"te", "tg", "th", "ti", "tk", "tl", "tn", "to", "tr", "ts", "tt", "tw",
+	"ty", "ug", "uk", "ur", "uz", "ve", "vi", "vo", "wa", "wo", "xh", "yi",
+	"yo", "za", "zh", "zu"
+};
+
 static void
 setup_framerates(QComboBox *combo, QString def)
 {
@@ -104,6 +123,7 @@ Frontend::Frontend(QWidget* parent)
 	: QDialog(parent),
 	input_dlg(this, "Select the input file", QString(), input_filter()),
 	output_dlg(this, "Select the output file", QString(), "*.*"),
+	subtitles_dlg(this, "Select the subtitles file", QString(), "Subtitles (*.srt);;Any files (*)"),
 	exitting(false),
 	input_valid(false)
 {
@@ -180,6 +200,19 @@ Frontend::Frontend(QWidget* parent)
 	set_label_min_size(ui.video_st_quality_label, "10");
 	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, ui.video_bitrate));
 
+	/* Subtitles */
+	subtitles_dlg.setFileMode(QFileDialog::ExistingFile);
+	connect(&subtitles_dlg, SIGNAL(fileSelected(QString)), ui.subtitles_file, SLOT(setText(QString)));
+	connect(ui.subtitles_add, SIGNAL(toggled(bool)), this, SLOT(updateSubtitles()));
+	connect(ui.subtitles_encoding, SIGNAL(editTextChanged(QString)), this, SLOT(updateSubtitles()));
+	connect(ui.subtitles_file, SIGNAL(textChanged(QString)), this, SLOT(updateSubtitles()));
+	connect(ui.subtitles_file_select, SIGNAL(released()), &subtitles_dlg, SLOT(exec()));
+	for (int i = 0; i < LENGTH(lang_codes); i++)
+		ui.subtitles_language->addItem(lang_codes[i]);
+	ui.subtitles_language->setEditText("");
+	QRegExp lang_regexp("([a-z]{2}(_[A-Z]{2})?)?");
+	ui.subtitles_language->setValidator(new QRegExpValidator(lang_regexp, this));
+
 	/* Advanced */
 	connect(ui.advanced_contrast, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
 	connect(ui.advanced_brightness, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
@@ -254,7 +287,7 @@ Frontend::transcode()
 	if (ui.widget->isEnabled() && ui.widget->isChecked()) \
 		OPTION(opt)
 #define OPTION_VALUE(opt, widget) \
-	if (ui.widget->isEnabled()) \
+	if (ui.widget->isEnabled() && !widget_value(ui.widget).isEmpty()) \
 		ea = ea << opt << widget_value(ui.widget)
 #define OPTION_DEFVALUE(opt, widget) \
 	if (ui.widget->currentIndex() > 0) \
@@ -262,9 +295,6 @@ Frontend::transcode()
 #define OPTION_FRAMERATE(opt, widget) \
 	if (ui.widget->currentIndex() > 0) \
 		ea = ea << opt << framerates[ui.widget->currentIndex() - 1];
-#define OPTION_TEXT(opt, widget) \
-	if (!ui.widget->text().isEmpty()) \
-		OPTION_VALUE(opt, widget)
 
 	OPTION_VALUE("--starttime", partial_start);
 	OPTION_VALUE("--endtime", partial_end);
@@ -309,24 +339,32 @@ Frontend::transcode()
 	OPTION_VALUE("--saturation", advanced_saturation_label);
 	OPTION_FLAG("--no-upscaling", advanced_no_upscaling);
 	OPTION_VALUE("--keyint", advanced_keyint_value);
-	OPTION_TEXT("--format", advanced_format_value);
+	OPTION_VALUE("--format", advanced_format_value);
 	OPTION_VALUE("--buf-delay", advanced_bdelay_value);
 
+	OPTION_FLAG("--nosubtitles", subtitles_disable_input);
+	if (ui.subtitles_add->isChecked()) {
+		OPTION_VALUE("--subtitles", subtitles_file);
+		OPTION_VALUE("--subtitles-category", subtitles_category);
+		OPTION_VALUE("--subtitles-language", subtitles_language);
+		OPTION_VALUE("--subtitles-encoding", subtitles_encoding);
+		OPTION_FLAG("--subtitles-ignore-non-utf8", subtitles_ignore_nonutf);
+	}
+
 	if (ui.metadata_add->isChecked()) {
-		OPTION_TEXT("--artist", metadata_artist);
-		OPTION_TEXT("--title", metadata_title);
-		OPTION_TEXT("--date", metadata_date);
-		OPTION_TEXT("--location", metadata_location);
-		OPTION_TEXT("--organization", metadata_organization);
-		OPTION_TEXT("--copyright", metadata_copyright);
-		OPTION_TEXT("--license", metadata_license);
-		OPTION_TEXT("--contact", metadata_contact);
+		OPTION_VALUE("--artist", metadata_artist);
+		OPTION_VALUE("--title", metadata_title);
+		OPTION_VALUE("--date", metadata_date);
+		OPTION_VALUE("--location", metadata_location);
+		OPTION_VALUE("--organization", metadata_organization);
+		OPTION_VALUE("--copyright", metadata_copyright);
+		OPTION_VALUE("--license", metadata_license);
+		OPTION_VALUE("--contact", metadata_contact);
 	}
 #undef OPTION
 #undef OPTION_FLAG
 #undef OPTION_VALUE
 #undef OPTION_DEFVALUE
-#undef OPTION_TEXT
 
 	if (ui.partial->isChecked()) {
 		double duration = ui.partial_end->value() - ui.partial_start->value();
@@ -684,6 +722,7 @@ Frontend::retrieveInfo()
 	updateInfo();
 	updateAudio();
 	updateVideo(true);
+	updateSubtitles(true);
 	updateMetadata(true);
 }
 
@@ -784,6 +823,23 @@ Frontend::updateVideo(bool another_file)
 		ui.video_crop_bottom->setMaximum(s->height);
 	}
 	updateAdvanced(another_file);
+}
+
+static bool
+is_utf(const QString &cp)
+{
+	return cp.toLower() == "utf-8" || cp.toLower() == "utf8";
+}
+
+void
+Frontend::updateSubtitles(bool another_file)
+{
+	if (another_file)
+		ui.subtitles_add->setChecked(false);
+	ui.subtitles_ignore_nonutf->setEnabled(is_utf(ui.subtitles_encoding->currentText()));
+	layout_enable(ui.subtitles_options_layout, ui.subtitles_add->isChecked());
+	QFileInfo fi(ui.subtitles_file->text());
+	ui.subtitles_options->setEnabled(ui.subtitles_add->isChecked() && fi.exists() && fi.isFile());
 }
 
 void

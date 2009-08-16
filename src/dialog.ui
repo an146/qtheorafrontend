@@ -1370,6 +1370,188 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="subtitles">
+      <attribute name="title">
+       <string>Subtitles</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_9">
+       <item>
+        <widget class="QCheckBox" name="subtitles_add">
+         <property name="text">
+          <string>Add Subtitles</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="subtitles_options_layout">
+         <item row="0" column="0" colspan="2">
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QPushButton" name="subtitles_file_select">
+             <property name="text">
+              <string>Select File: </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="subtitles_file"/>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0">
+          <widget class="QGroupBox" name="subtitles_options">
+           <property name="title">
+            <string>Options</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_10">
+            <item row="0" column="0" colspan="2">
+             <widget class="QLabel" name="label_43">
+              <property name="text">
+               <string>Category: </string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="2">
+             <widget class="QLabel" name="label_44">
+              <property name="text">
+               <string>Language code: </string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="2">
+             <widget class="QLabel" name="label_45">
+              <property name="text">
+               <string>Encoding:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QComboBox" name="subtitles_category">
+              <item>
+               <property name="text">
+                <string>subtitles</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>commentary</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>transcript</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>lyrics</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QComboBox" name="subtitles_encoding">
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+              <item>
+               <property name="text">
+                <string>UTF-8</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>iso-8859-1</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>latin1</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="3" column="1" colspan="2">
+             <widget class="QCheckBox" name="subtitles_ignore_nonutf">
+              <property name="toolTip">
+               <string>When reading an UTF-8 subtitles text file, any invalid UTF-8
+sequence will be ignored. This may be useful if there are stray
+sequences in an otherwise UTF-8 file. Note that, since those
+invalid sequences will be removed from the output, this option is
+not a substitute to converting a non UTF-8 file to UTF-8.</string>
+              </property>
+              <property name="text">
+               <string>Ignore non-UTF-8</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_46">
+              <property name="minimumSize">
+               <size>
+                <width>10</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QComboBox" name="subtitles_language">
+              <property name="toolTip">
+               <string>Sets the language of the subtitles stream.
+Language must be a language tag according to RFC 3066
+(usually a two letter language code, optionally followed
+by a dash (or underscore) and a region code.
+Examples include en, it, ja, en_GB, de_DE, etc.)</string>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <spacer name="horizontalSpacer_13">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="subtitles_disable_input">
+         <property name="text">
+          <string>Disable subtitles from the input file (if any)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_13">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="advanced">
       <attribute name="title">
        <string>Advanced</string>

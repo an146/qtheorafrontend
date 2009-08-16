@@ -63,6 +63,7 @@ protected slots:
 	void updateInfo();
 	void updateAudio();
 	void updateVideo(bool another_file = false);
+	void updateSubtitles(bool another_file = false);
 	void updateAdvanced(bool another_file = false);
 	void updateMetadata(bool another_file = false);
 	double cropped_aspect() const;
@@ -80,7 +81,7 @@ protected slots:
 
 private:
 	Ui::Dialog ui;
-	QFileDialog input_dlg, output_dlg;
+	QFileDialog input_dlg, output_dlg, subtitles_dlg;
 	bool output_auto;
 	bool exitting;
 	bool input_valid;
