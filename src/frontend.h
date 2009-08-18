@@ -23,6 +23,7 @@
 #define H_FRONTEND
 
 #include <QFileDialog>
+#include <QList>
 #include "transcoder.h"
 #include "fileinfo.h"
 #include "ui_dialog.h"
@@ -34,8 +35,7 @@ class Frontend : public QDialog
 public:
 	Frontend(QWidget* parent = 0);
 	int cancel_ask(const QString &, bool);
-
-	static QString time2string(double, int decimals = 0, bool colons = true);
+	int running_jobs() const;
 
 protected:
 	void closeEvent(QCloseEvent *);
@@ -47,10 +47,9 @@ protected slots:
 	void transcode();
 	bool cancel();
 	void updateStatus(QString statusText);
-	void updateStatus(double pos, double eta, double audio_b, double video_b, int pass);
-	void finished(int reason);
 	void updateButtons();
 	void checkForSomethingToEncode();
+	void transcoderDestroyed();
 
 	void updateAdvancedMode();
 	void outputSelected(const QString &);
@@ -85,10 +84,9 @@ private:
 	bool output_auto;
 	bool exitting;
 	bool input_valid;
-	bool keep_output;
 	FileInfo finfo;
 
-	Transcoder* transcoder;
+	QList<Transcoder*> transcoders;
 };
 
 #endif // H_FRONTEND

@@ -20,16 +20,21 @@
  *
  */
 
+#include <QApplication>
+#include <QFileInfo>
+#include <QDir>
 #include <QProcess>
 #include <QMetaType>
 #include <QFile>
 #include <QMessageBox>
 #include "transcoder.h"
-#include "frontend.h"
 #include "util.h"
 
-Transcoder::Transcoder(Frontend *f)
-	: QThread(NULL), frontend_(f)
+Transcoder::Transcoder(QString i, QString o, QStringList ea)
+	: QThread(NULL),
+	input_filename_(i),
+	output_filename_(o),
+	extra_args_(ea)
 {
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
 	proc_.moveToThread(this);
@@ -40,13 +45,10 @@ Transcoder::Transcoder(Frontend *f)
 }
 
 void
-Transcoder::start(const QString &input, const QString &output, const QStringList &ea)
+Transcoder::start()
 {
 	if (!isRunning()) {
-		input_filename_ = input;
-		output_filename_ = output;
 		start_time_ = QDateTime::currentDateTime();
-		extra_args_ = ea;
 		QThread::start();
 	}
 }
@@ -79,6 +81,15 @@ double
 Transcoder::elapsed() const
 {
 	return start_time_.secsTo(QDateTime::currentDateTime());
+}
+
+QStringList
+Transcoder::args() const
+{
+	return QStringList() << "--frontend"
+		<< extra_args_
+		<< "--output" << output_filename()
+		<< input_filename();
 }
 
 #define BUF_SIZE 256
@@ -115,19 +126,16 @@ Transcoder::run()
 	stopping_ = false;
 	pass_ = extra_args_.contains("--two-pass") ? 0 : -1;
 	
-	proc_.start(ffmpeg2theora(), QStringList() << "--frontend"
-		<< extra_args_
-		<< "--output" << output_filename()
-		<< input_filename());
+	proc_.start(ffmpeg2theora(), args());
 
 	if (proc_.waitForStarted())
 		exec();
 	else
-		emit statusUpdate("Encoding failed to start");
+		emit statusUpdate(-1, -1, -1, -1, -1, -1, "Encoding failed to start");
 }
 
 void
-Transcoder::processLine(const QString &line)
+Transcoder::processLine(QString line)
 {
 	if (line.startsWith("{")) {
 		QStringList sl = line.split(QRegExp("(\\{|,|\\})"), QString::SkipEmptyParts);
@@ -142,13 +150,14 @@ Transcoder::processLine(const QString &line)
 				audio_b_ = value.toDouble();
 			else if (key == "video_kbps")
 				video_b_ = value.toDouble();
+			else if (key == "duration")
+				duration_ = value.toDouble();
 			else if (key == "position")
 				position_ = value.toDouble();
 
 			if (pass_ == 0 && (audio_b_ > 0 || video_b_ > 0))
 				pass_ = 1;
 		}
-		emit statusUpdate(position_, eta_, audio_b_, video_b_, pass_);
-	} else
-		emit statusUpdate(line);
+	}
+	emit statusUpdate(duration_, position_, eta_, audio_b_, video_b_, pass_, line);
 }

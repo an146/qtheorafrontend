@@ -25,5 +25,6 @@
 #include <QString>
 
 bool parse_json_pair(QString, QString *key, QString *value);
+QString time2string(double, int decimals = 0, bool colons = true);
 
 #endif /* H_UTIL */

@@ -50,3 +50,49 @@ parse_json_pair(QString input, QString *key, QString *value)
 	*value = unquote(sl[1]);
 	return true;
 }
+
+#define BUF_SIZE 256
+
+QString
+time2string(double t, int decimals, bool colons)
+{
+	if (t < 0)
+		return "";
+	double precision = 1.0;
+	for (int i = 0; i < decimals; i++)
+		precision /= 10;
+	t += precision / 2;
+
+	long long seconds = (long long)t;
+	long long minutes = seconds / 60;
+	long long hours = minutes / 60;
+
+	char buf[BUF_SIZE];
+	if (colons)
+		snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
+	else if (hours > 0)
+		snprintf(buf, BUF_SIZE, "%llih %llim %llis", hours, minutes % 60, seconds % 60);
+	else if (minutes > 0)
+		snprintf(buf, BUF_SIZE, "%llim %llis", minutes % 60, seconds % 60);
+	else if (seconds > 0)
+		snprintf(buf, BUF_SIZE, "%llis", seconds % 60);
+	else
+		snprintf(buf, BUF_SIZE, "0s");
+
+	double s = t - seconds;
+	for (int i = 0; i < decimals; i++)
+		s *= 10;
+	int x = (int)s;
+	while (x % 10 == 0 && decimals > 0) {
+		x /= 10;
+		decimals--;
+	}
+	if (decimals > 0) {
+		char fmt[BUF_SIZE], buf1[BUF_SIZE];
+		sprintf(fmt, ".%%.0%ii", decimals);
+		sprintf(buf1, fmt, x);
+		strcat(buf, buf1);
+	}
+	return buf;
+}
+

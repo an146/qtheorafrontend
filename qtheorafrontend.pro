@@ -10,9 +10,11 @@ RCC_DIR = build
 QMAKE_LINK_OBJECT_SCRIPT = build/object_script
 
 # Input
-HEADERS += src/fileinfo.h src/frontend.h src/transcoder.h src/qtimespinbox.h src/util.h
-FORMS += src/dialog.ui
-SOURCES += src/fileinfo.cpp src/frontend.cpp src/main.cpp src/transcoder.cpp src/qtimespinbox.cpp src/util.cpp
+HEADERS += src/fileinfo.h src/frontend.h src/transcoder.h \
+		   src/qtimespinbox.h src/queue_item.h src/util.h
+FORMS += src/dialog.ui src/queue_item.ui
+SOURCES += src/fileinfo.cpp src/frontend.cpp src/main.cpp src/transcoder.cpp \
+		   src/queue_item.cpp src/qtimespinbox.cpp src/util.cpp
 RESOURCES += src/resources.qrc
 ICON += src/app.icns
 RC_FILE += src/resources.rc

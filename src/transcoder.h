@@ -35,13 +35,13 @@ class Transcoder : public QThread
 	Q_OBJECT
 
 public:
-	explicit Transcoder(Frontend *);
-	void start(const QString &input, const QString &output, const QStringList & = QStringList());
+	Transcoder(QString input, QString output, QStringList args);
 	static QString ffmpeg2theora();
 
-	QString input_filename() { return input_filename_; }
-	QString output_filename() { return output_filename_; }
+	QString input_filename() const { return input_filename_; }
+	QString output_filename() const { return output_filename_; }
 	double elapsed() const;
+	QStringList args() const;
 
 	enum {
 		OK,
@@ -49,16 +49,16 @@ public:
 		STOPPED
 	};
 public slots:
+	void start();
 	void stop();
 
 signals:
-	void statusUpdate(QString status);
-	void statusUpdate(double pos, double eta, double audio_b, double video_b, int pass);
+	void statusUpdate(double duration, double pos, double eta, double audio_b, double video_b, int pass, QString raw);
 	void finished(int reason);
 
 protected:
 	void run();
-	void processLine(const QString &);
+	void processLine(QString);
 
 protected slots:
 	void readyRead();
@@ -71,11 +71,11 @@ private:
 	QString input_filename_;
 	QString output_filename_;
 	QProcess proc_;
-	Frontend *frontend_;
 	QStringList extra_args_;
 	QDateTime start_time_;
 	bool stopping_;
 
+	double duration_;
 	double position_;
 	double eta_;
 	double audio_b_;

@@ -27,6 +27,8 @@
 #include <QPlastiqueStyle>
 #include <QSettings>
 #include "frontend.h"
+#include "queue_item.h"
+#include "util.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
@@ -129,13 +131,6 @@ Frontend::Frontend(QWidget* parent)
 {
 	ui.setupUi(this);
 	ui.progress->setStyle(new QPlastiqueStyle());
-	transcoder = new Transcoder(this);
-	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
-	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
-	connect(transcoder, SIGNAL(finished(int)), this, SLOT(finished(int)));
-	connect(transcoder, SIGNAL(statusUpdate(QString)), this, SLOT(updateStatus(QString)));
-	connect(transcoder, SIGNAL(statusUpdate(double, double, double, double, int)),
-			this, SLOT(updateStatus(double, double, double, double, int)));
 
 	input_dlg.setOption(QFileDialog::HideNameFilterDetails);
 	input_dlg.setFileMode(QFileDialog::ExistingFile);
@@ -235,24 +230,19 @@ Frontend::Frontend(QWidget* parent)
 }
 
 int
-Frontend::cancel_ask(const QString &reason, bool cancel_button)
+Frontend::running_jobs() const
 {
-	QMessageBox::StandardButtons buttons = QMessageBox::Save | QMessageBox::Discard;
-	if (cancel_button)
-		buttons |= QMessageBox::Cancel;
-	return QMessageBox::question(
-		this,
-		"qtheorafrontend",
-		reason + "Do you want to keep the partially encoded file?",
-		buttons,
-		QMessageBox::Discard
-	);
+	int ret = 0;
+	foreach (Transcoder *transcoder, transcoders)
+		if (transcoder->isRunning())
+			ret++;
+	return ret;
 }
 
 void
 Frontend::closeEvent(QCloseEvent *event)
 {
-	if (!transcoder->isRunning()) {
+	if (!running_jobs()) {
 		writeSettings();
 		event->accept();
 	} else {
@@ -367,95 +357,38 @@ Frontend::transcode()
 #undef OPTION_VALUE
 #undef OPTION_DEFVALUE
 
-	if (ui.partial->isChecked()) {
-		double duration = ui.partial_end->value() - ui.partial_start->value();
-		ui.progress->setMaximum((int)duration);
-	} else
-		ui.progress->setMaximum(finfo.duration > 0 ? int(finfo.duration) : 0);
-	transcoder->start(ui.input->text(), ui.output->text(), ea);
+	Transcoder *transcoder = new Transcoder(ui.input->text(), ui.output->text(), ea);
+	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(destroyed()), this, SLOT(transcoderDestroyed()));
+	transcoders.push_back(transcoder);
+	ui.queue_jobs->layout()->addWidget(new QueueItem(ui.queue_jobs, transcoder));
+	transcoder->start();
 }
 
 bool
 Frontend::cancel()
 {
-	switch (cancel_ask("You are going to cancel the encoding. ", true)) {
-	case QMessageBox::Discard:
-		keep_output = false;
-		transcoder->stop();
+	int btn = QMessageBox::question(
+		this,
+		"qtheorafrontend",
+		"Do you want cancel all the encodings?",
+		QMessageBox::Yes | QMessageBox::No,
+		QMessageBox::Yes
+	);
+
+	if (btn == QMessageBox::Yes) {
+		foreach (Transcoder *transcoder, transcoders)
+			transcoder->stop();
 		return true;
-	case QMessageBox::Save:
-		keep_output = true;
-		transcoder->stop();
-		return true;
-	default:
+	} else
 		return false;
-	}
 }
 
 void
 Frontend::updateStatus(QString statusText)
 {
 	ui.status->setText(statusText);
-}
-
-void
-Frontend::updateStatus(double pos, double eta, double audio_b, double video_b, int pass)
-{
-	QString status = "";
-	status += "Position: " + time2string(pos);
-	if (finfo.duration > 0)
-		status += "/" + time2string(finfo.duration);
-	if (audio_b > 0)
-		status += "   Audio Bitrate: " + QString::number(audio_b, 'f', 0);
-	if (video_b > 0)
-		status += "   Video Bitrate: " + QString::number(video_b, 'f', 0);
-	status += "   Time Elapsed: " + time2string(transcoder->elapsed(), 0, false);
-
-	QString format =
-		pass == 0 ? QString("First pass: ") :
-		pass == 1 ? QString("Second pass: ") :
-		QString();
-
-	format += "%p%";
-	if (eta > 0)
-		format += QString("   ETA: ") + time2string(eta, 0, false);
-	ui.progress->setFormat(format);
-
-	int ipos = (int)pos;
-	if (ipos < ui.progress->maximum())
-		ui.progress->setValue(ipos);
-	updateStatus(status);
-}
-
-void
-Frontend::finished(int reason)
-{
-	QString finish_message;
-
-	switch (reason) {
-	case Transcoder::OK:
-		keep_output = true;
-		if (ui.progress->maximum() > 0)
-			ui.progress->setValue(ui.progress->maximum());
-		else {
-			ui.progress->setMaximum(1);
-			ui.progress->reset();
-		}
-		finish_message = "Encoding finished successfully";
-		QMessageBox::information(this, "qtheorafeontend", finish_message);
-		break;
-	case Transcoder::FAILED:
-		keep_output = cancel_ask("Encoding failed. ", false) == QMessageBox::Save;
-	case Transcoder::STOPPED:
-		finish_message = keep_output ?
-			QString("Encoding failed. Partial file kept") :
-			QString("Encoding failed. Partial file deleted");
-		break;
-	}
-
-	if (!keep_output)
-		QFile(transcoder->output_filename()).remove();
-	emit updateStatus(finish_message);
 }
 
 void
@@ -483,15 +416,17 @@ Frontend::outputSelected(const QString &s)
 void
 Frontend::updateButtons()
 {
-	bool running = transcoder->isRunning();
+	int running = running_jobs();
 	bool missing_data = ui.input->text().isEmpty() ||
 		ui.output->text().isEmpty() ||
 		ui.input->text() == ui.output->text();
 	bool encode = encode_audio() || encode_video();
-	bool can_start = !running && !missing_data && encode && input_valid;
+	bool adv = ui.advanced_mode->isChecked();
+	bool can_start = (adv || !running) && !missing_data && encode && input_valid;
 
 	ui.output_select->setEnabled(input_valid);
 	ui.output->setEnabled(input_valid);
+	ui.transcode->setText(adv && running ? QString("Add to Queue") : QString("Start"));
 	ui.transcode->setEnabled(can_start);
 	ui.transcode->setDefault(can_start);
 	ui.cancel->setEnabled(running);
@@ -511,7 +446,7 @@ Frontend::updateButtons()
 void
 Frontend::checkForSomethingToEncode()
 {
-	if (!transcoder->isRunning() && input_valid) {
+	if (input_valid) {
 		if (!encode_audio() && !encode_video())
 			updateStatus("Nothing to encode");
 		else if (ui.input->text() == ui.output->text())
@@ -519,6 +454,13 @@ Frontend::checkForSomethingToEncode()
 		else
 			updateStatus("");
 	}
+}
+
+void
+Frontend::transcoderDestroyed()
+{
+	transcoders.removeAll(qobject_cast<Transcoder *>(sender()));
+	updateButtons();
 }
 
 void
@@ -616,7 +558,7 @@ present_as_is(const QString &s)
 static QString
 present_time(double t)
 {
-	return Frontend::time2string(t);
+	return time2string(t);
 }
 
 static QString
@@ -864,49 +806,6 @@ Frontend::updateMetadata(bool another_file)
 	if (another_file)
 		ui.metadata_add->setChecked(false);
 	layout_enable(ui.metadata_options_layout, ui.metadata_add->isChecked());
-}
-
-QString
-Frontend::time2string(double t, int decimals, bool colons)
-{
-	if (t < 0)
-		return "";
-	double precision = 1.0;
-	for (int i = 0; i < decimals; i++)
-		precision /= 10;
-	t += precision / 2;
-
-	long long seconds = (long long)t;
-	long long minutes = seconds / 60;
-	long long hours = minutes / 60;
-
-	char buf[BUF_SIZE];
-	if (colons)
-		snprintf(buf, BUF_SIZE, "%lli:%.02lli:%.02lli", hours, minutes % 60, seconds % 60);
-	else if (hours > 0)
-		snprintf(buf, BUF_SIZE, "%llih %llim %llis", hours, minutes % 60, seconds % 60);
-	else if (minutes > 0)
-		snprintf(buf, BUF_SIZE, "%llim %llis", minutes % 60, seconds % 60);
-	else if (seconds > 0)
-		snprintf(buf, BUF_SIZE, "%llis", seconds % 60);
-	else
-		snprintf(buf, BUF_SIZE, "0s");
-
-	double s = t - seconds;
-	for (int i = 0; i < decimals; i++)
-		s *= 10;
-	int x = (int)s;
-	while (x % 10 == 0 && decimals > 0) {
-		x /= 10;
-		decimals--;
-	}
-	if (decimals > 0) {
-		char fmt[BUF_SIZE], buf1[BUF_SIZE];
-		sprintf(fmt, ".%%.0%ii", decimals);
-		sprintf(buf1, fmt, x);
-		strcat(buf, buf1);
-	}
-	return buf;
 }
 
 static const char *extensions[] = {

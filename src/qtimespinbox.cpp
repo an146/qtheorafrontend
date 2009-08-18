@@ -1,6 +1,6 @@
 #include <QStringList>
 #include "qtimespinbox.h"
-#include "frontend.h"
+#include "util.h"
 
 QTimeSpinBox::QTimeSpinBox(QWidget *parent)
 	: QDoubleSpinBox(parent),
@@ -11,7 +11,7 @@ QTimeSpinBox::QTimeSpinBox(QWidget *parent)
 
 QString QTimeSpinBox::textFromValue(double value) const
 {
-	return Frontend::time2string(value, decimals());
+	return time2string(value, decimals());
 }
 
 double QTimeSpinBox::valueFromText(const QString &input) const
