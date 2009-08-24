@@ -351,6 +351,7 @@ Frontend::transcode()
 		OPTION_FLAG("--subtitles-ignore-non-utf8", subtitles_ignore_nonutf);
 	}
 
+	OPTION_FLAG("--nometadata", metadata_disable_input);
 	if (ui.metadata_add->isChecked()) {
 		OPTION_VALUE("--artist", metadata_artist);
 		OPTION_VALUE("--title", metadata_title);
