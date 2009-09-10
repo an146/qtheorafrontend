@@ -28,7 +28,7 @@
 #include <QSettings>
 #include "frontend.h"
 #include "queue_item.h"
-#include "util.h"
+#include "ui_dialog.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
 
@@ -43,8 +43,8 @@
 /* a year will do :) */
 #define MAX_TIME (365 * 24 * 3600)
 
-#define DEPEND(wdep, w) ui.wdep->setEnabled(ui.w->isEnabled() && ui.w->isChecked())
-#define DEPEND_CONNECT(wdep, w) connect(ui.w, SIGNAL(toggled(bool)), ui.wdep, SLOT(setEnabled(bool)));
+#define DEPEND(wdep, w) ui->wdep->setEnabled(ui->w->isEnabled() && ui->w->isChecked())
+#define DEPEND_CONNECT(wdep, w) connect(ui->w, SIGNAL(toggled(bool)), ui->wdep, SLOT(setEnabled(bool)));
 
 static QString input_filter();
 
@@ -129,106 +129,121 @@ Frontend::Frontend(QWidget* parent)
 	exitting(false),
 	input_valid(false)
 {
-	ui.setupUi(this);
-	ui.progress->setStyle(new QPlastiqueStyle());
+	ui->setupUi(this);
+	ui->progress->setStyle(new QPlastiqueStyle());
 
 	input_dlg.setOption(QFileDialog::HideNameFilterDetails);
 	input_dlg.setFileMode(QFileDialog::ExistingFile);
 	output_dlg.setOption(QFileDialog::DontConfirmOverwrite);
 	output_dlg.setAcceptMode(QFileDialog::AcceptSave);
 	output_dlg.setFileMode(QFileDialog::AnyFile);
-	connect(&input_dlg, SIGNAL(fileSelected(QString)), ui.input, SLOT(setText(QString)));
+	connect(&input_dlg, SIGNAL(fileSelected(QString)), ui->input, SLOT(setText(QString)));
 	connect(&output_dlg, SIGNAL(fileSelected(QString)), this, SLOT(outputSelected(QString)));
 
-	connect(ui.advanced_mode, SIGNAL(toggled(bool)), this, SLOT(updateAdvancedMode()));
-	connect(ui.input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
-	connect(ui.output_select, SIGNAL(released()), this, SLOT(selectOutput()));
-	connect(ui.input, SIGNAL(textChanged(QString)), this, SLOT(retrieveInfo()));
-	connect(ui.output, SIGNAL(textChanged(QString)), this, SLOT(outputChanged()));
-	connect(ui.transcode, SIGNAL(released()), this, SLOT(transcode()));
-	connect(ui.cancel, SIGNAL(released()), this, SLOT(cancel()));
-	connect(ui.partial_start, SIGNAL(valueChanged(double)), ui.partial_end, SLOT(setMinimum(double)));
-	connect(ui.partial_end, SIGNAL(valueChanged(double)), ui.partial_start, SLOT(setMaximum(double)));
-	connect(ui.no_skeleton, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
+	connect(ui->advanced_mode, SIGNAL(toggled(bool)), this, SLOT(updateAdvancedMode()));
+	connect(ui->input_select, SIGNAL(released()), &input_dlg, SLOT(exec()));
+	connect(ui->output_select, SIGNAL(released()), this, SLOT(selectOutput()));
+	connect(ui->input, SIGNAL(textChanged(QString)), this, SLOT(retrieveInfo()));
+	connect(ui->output, SIGNAL(textChanged(QString)), this, SLOT(outputChanged()));
+	connect(ui->transcode, SIGNAL(released()), this, SLOT(transcode()));
+	connect(ui->cancel, SIGNAL(released()), this, SLOT(cancel()));
+	connect(ui->partial_start, SIGNAL(valueChanged(double)), ui->partial_end, SLOT(setMinimum(double)));
+	connect(ui->partial_end, SIGNAL(valueChanged(double)), ui->partial_start, SLOT(setMaximum(double)));
+	connect(ui->no_skeleton, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
 	DEPEND_CONNECT(partial_start, partial);
 	DEPEND_CONNECT(partial_end, partial);
 
 	/* Info */
-	connect(ui.info_audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
-	connect(ui.info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
+	connect(ui->info_audio_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
+	connect(ui->info_video_stream, SIGNAL(currentIndexChanged(int)), this, SLOT(updateInfo()));
 
 	/* Audio */
-	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
-	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
-	connect(ui.audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
-	connect(ui.audio_quality, SIGNAL(valueChanged(int)), ui.audio_quality_label, SLOT(setNum(int)));
+	connect(ui->audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateAudio()));
+	connect(ui->audio_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
+	connect(ui->audio_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
+	connect(ui->audio_quality, SIGNAL(valueChanged(int)), ui->audio_quality_label, SLOT(setNum(int)));
 	DEPEND_CONNECT(audio_quality, audio_const_quality);
 	DEPEND_CONNECT(audio_bitrate, audio_const_bitrate);
-	set_label_min_size(ui.audio_quality_label, "10");
+	set_label_min_size(ui->audio_quality_label, "10");
 
 	/* Video */
-	setup_framerates(ui.video_input_framerate, "Autodetect");
-	setup_framerates(ui.video_output_framerate, "Same as source");
-	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateVideo()));
-	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
-	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
-	connect(ui.video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
+	setup_framerates(ui->video_input_framerate, "Autodetect");
+	setup_framerates(ui->video_output_framerate, "Same as source");
+	connect(ui->video_encode, SIGNAL(toggled(bool)), this, SLOT(updateVideo()));
+	connect(ui->video_encode, SIGNAL(toggled(bool)), this, SLOT(checkForSomethingToEncode()));
+	connect(ui->video_encode, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
+	connect(ui->video_encode, SIGNAL(toggled(bool)), this, SLOT(fixExtension()));
 	DEPEND_CONNECT(video_quality, video_const_quality);
 	DEPEND_CONNECT(video_quality_label, video_const_quality);
 	DEPEND_CONNECT(video_bitrate, video_const_bitrate);
 	DEPEND_CONNECT(video_two_pass, video_const_bitrate);
 	DEPEND_CONNECT(video_st, video_const_bitrate);
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
-	connect(ui.video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateAdvanced()));
-	connect(ui.video_st, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
-	connect(ui.video_st_quality_on, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
-	connect(ui.video_quality, SIGNAL(valueChanged(int)), ui.video_quality_label, SLOT(setNum(int)));
-	connect(ui.video_st_quality, SIGNAL(valueChanged(int)), ui.video_st_quality_label, SLOT(setNum(int)));
-	connect(ui.video_crop_left, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
-	connect(ui.video_crop_right, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
-	connect(ui.video_crop_top, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
-	connect(ui.video_crop_bottom, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
-	connect(ui.video_width, SIGNAL(valueChanged(int)), this, SLOT(videoWidthChanged()));
-	connect(ui.video_height, SIGNAL(valueChanged(int)), this, SLOT(videoHeightChanged()));
-	connect(ui.video_keep_proportions, SIGNAL(toggled(bool)), this, SLOT(fixVideoHeight()));
-	set_label_min_size(ui.video_quality_label, "10");
-	set_label_min_size(ui.video_st_quality_label, "10");
-	ui.video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, this));
+	connect(ui->video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
+	connect(ui->video_const_bitrate, SIGNAL(toggled(bool)), this, SLOT(updateAdvanced()));
+	connect(ui->video_st, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
+	connect(ui->video_st_quality_on, SIGNAL(toggled(bool)), this, SLOT(updateSoftTarget()));
+	connect(ui->video_quality, SIGNAL(valueChanged(int)), ui->video_quality_label, SLOT(setNum(int)));
+	connect(ui->video_st_quality, SIGNAL(valueChanged(int)), ui->video_st_quality_label, SLOT(setNum(int)));
+	connect(ui->video_crop_left, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
+	connect(ui->video_crop_right, SIGNAL(valueChanged(int)), this, SLOT(xcropChanged()));
+	connect(ui->video_crop_top, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
+	connect(ui->video_crop_bottom, SIGNAL(valueChanged(int)), this, SLOT(ycropChanged()));
+	connect(ui->video_width, SIGNAL(valueChanged(int)), this, SLOT(videoWidthChanged()));
+	connect(ui->video_height, SIGNAL(valueChanged(int)), this, SLOT(videoHeightChanged()));
+	connect(ui->video_keep_proportions, SIGNAL(toggled(bool)), this, SLOT(fixVideoHeight()));
+	set_label_min_size(ui->video_quality_label, "10");
+	set_label_min_size(ui->video_st_quality_label, "10");
+	ui->video_bitrate->setValidator(new QIntValidator(MIN_BITRATE, MAX_BITRATE, this));
 
 	/* Subtitles */
 	subtitles_dlg.setFileMode(QFileDialog::ExistingFile);
-	connect(&subtitles_dlg, SIGNAL(fileSelected(QString)), ui.subtitles_file, SLOT(setText(QString)));
-	connect(ui.subtitles_add, SIGNAL(toggled(bool)), this, SLOT(updateSubtitles()));
-	connect(ui.subtitles_encoding, SIGNAL(editTextChanged(QString)), this, SLOT(updateSubtitles()));
-	connect(ui.subtitles_file, SIGNAL(textChanged(QString)), this, SLOT(updateSubtitles()));
-	connect(ui.subtitles_file_select, SIGNAL(released()), &subtitles_dlg, SLOT(exec()));
+	connect(&subtitles_dlg, SIGNAL(fileSelected(QString)), ui->subtitles_file, SLOT(setText(QString)));
+	connect(ui->subtitles_add, SIGNAL(toggled(bool)), this, SLOT(updateSubtitles()));
+	connect(ui->subtitles_encoding, SIGNAL(editTextChanged(QString)), this, SLOT(updateSubtitles()));
+	connect(ui->subtitles_file, SIGNAL(textChanged(QString)), this, SLOT(updateSubtitles()));
+	connect(ui->subtitles_file_select, SIGNAL(released()), &subtitles_dlg, SLOT(exec()));
 	for (int i = 0; i < LENGTH(lang_codes); i++)
-		ui.subtitles_language->addItem(lang_codes[i]);
-	ui.subtitles_language->setEditText("");
+		ui->subtitles_language->addItem(lang_codes[i]);
+	ui->subtitles_language->setEditText("");
 	QRegExp lang_regexp("([a-z]{2}(_[A-Z]{2})?)?");
-	ui.subtitles_language->setValidator(new QRegExpValidator(lang_regexp, this));
+	ui->subtitles_language->setValidator(new QRegExpValidator(lang_regexp, this));
 
 	/* Advanced */
-	connect(ui.advanced_contrast, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
-	connect(ui.advanced_brightness, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
-	connect(ui.advanced_gamma, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
-	connect(ui.advanced_saturation, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
-	connect(ui.advanced_adjust_reset, SIGNAL(released()), this, SLOT(resetAdjust()));
+	connect(ui->advanced_contrast, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui->advanced_brightness, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui->advanced_gamma, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui->advanced_saturation, SIGNAL(valueChanged(int)), this, SLOT(updateAdvanced()));
+	connect(ui->advanced_adjust_reset, SIGNAL(released()), this, SLOT(resetAdjust()));
 	DEPEND_CONNECT(advanced_keyint_value, advanced_keyint);
 	DEPEND_CONNECT(advanced_format_value, advanced_format);
 	DEPEND_CONNECT(advanced_bdelay_value, advanced_bdelay);
-	set_label_min_size(ui.advanced_contrast_label, "10.0");
-	ui.advanced_keyint_value->setValidator(new QIntValidator(MIN_KEYINT, MAX_KEYINT, this));
-	ui.advanced_bdelay_value->setValidator(new QIntValidator(MIN_BDELAY, MAX_BDELAY, this));
+	set_label_min_size(ui->advanced_contrast_label, "10.0");
+	ui->advanced_keyint_value->setValidator(new QIntValidator(MIN_KEYINT, MAX_KEYINT, this));
+	ui->advanced_bdelay_value->setValidator(new QIntValidator(MIN_BDELAY, MAX_BDELAY, this));
 
 	/* Metadata */
-	connect(ui.metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
+	connect(ui->metadata_add, SIGNAL(toggled(bool)), this, SLOT(updateMetadata()));
 
 	readSettings();
 	retrieveInfo();
 	updateAdvancedMode();
+	
+	/* Preferences */
+	connect(ui->keep_partial, SIGNAL(toggled(bool)), this, SLOT(keepPartialChanged()));
 }
 
+bool
+Frontend::encode_audio() const
+{
+	return ui->audio_encode->isChecked();
+}
+
+bool
+Frontend::encode_video() const
+{
+	return ui->video_encode->isChecked();
+}
+	
 int
 Frontend::running_jobs() const
 {
@@ -262,7 +277,7 @@ static QString widget_value(QLabel *w)         { return w->text(); }
 void
 Frontend::transcode()
 {
-	if (QFileInfo(ui.output->text()).exists()) {
+	if (QFileInfo(ui->output->text()).exists()) {
 		if (QMessageBox::warning(this, "Overwrite file?",
 			"The output file already exists. Do you want to replace it?",
 			QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes
@@ -274,24 +289,24 @@ Frontend::transcode()
 
 #define OPTION(opt) ea = ea << opt
 #define OPTION_FLAG(opt, widget) \
-	if (ui.widget->isEnabled() && ui.widget->isChecked()) \
+	if (ui->widget->isEnabled() && ui->widget->isChecked()) \
 		OPTION(opt)
 #define OPTION_VALUE(opt, widget) \
-	if (ui.widget->isEnabled() && !widget_value(ui.widget).isEmpty()) \
-		ea = ea << opt << widget_value(ui.widget)
+	if (ui->widget->isEnabled() && !widget_value(ui->widget).isEmpty()) \
+		ea = ea << opt << widget_value(ui->widget)
 #define OPTION_DEFVALUE(opt, widget) \
-	if (ui.widget->currentIndex() > 0) \
+	if (ui->widget->currentIndex() > 0) \
 		OPTION_VALUE(opt, widget)
 #define OPTION_FRAMERATE(opt, widget) \
-	if (ui.widget->currentIndex() > 0) \
-		ea = ea << opt << framerates[ui.widget->currentIndex() - 1];
+	if (ui->widget->currentIndex() > 0) \
+		ea = ea << opt << framerates[ui->widget->currentIndex() - 1];
 
 	OPTION_VALUE("--starttime", partial_start);
 	OPTION_VALUE("--endtime", partial_end);
 	OPTION_FLAG("--sync", sync);
 	OPTION_FLAG("--no-skeleton", no_skeleton);
 
-	if (ui.audio_encode->isChecked()) {
+	if (ui->audio_encode->isChecked()) {
 		OPTION_VALUE("--audiostream", audio_stream);
 		OPTION_VALUE("--channels", audio_channels);
 		OPTION_VALUE("--samplerate", audio_samplerate);
@@ -300,7 +315,7 @@ Frontend::transcode()
 	} else
 		OPTION("--noaudio");
 
-	if (ui.video_encode->isChecked()) {
+	if (ui->video_encode->isChecked()) {
 		OPTION_VALUE("--videostream", video_stream);
 		OPTION_VALUE("--videoquality", video_quality);
 		OPTION_VALUE("--videobitrate", video_bitrate);
@@ -333,7 +348,7 @@ Frontend::transcode()
 	OPTION_VALUE("--buf-delay", advanced_bdelay_value);
 
 	OPTION_FLAG("--nosubtitles", subtitles_disable_input);
-	if (ui.subtitles_add->isChecked()) {
+	if (ui->subtitles_add->isChecked()) {
 		OPTION_VALUE("--subtitles", subtitles_file);
 		OPTION_VALUE("--subtitles-category", subtitles_category);
 		OPTION_VALUE("--subtitles-language", subtitles_language);
@@ -342,7 +357,7 @@ Frontend::transcode()
 	}
 
 	OPTION_FLAG("--nometadata", metadata_disable_input);
-	if (ui.metadata_add->isChecked()) {
+	if (ui->metadata_add->isChecked()) {
 		OPTION_VALUE("--artist", metadata_artist);
 		OPTION_VALUE("--title", metadata_title);
 		OPTION_VALUE("--date", metadata_date);
@@ -357,13 +372,14 @@ Frontend::transcode()
 #undef OPTION_VALUE
 #undef OPTION_DEFVALUE
 
-	Transcoder *transcoder = new Transcoder(ui.input->text(), ui.output->text(), ea);
+	Transcoder *transcoder = new Transcoder(ui->input->text(), ui->output->text(), ea);
 	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(destroyed()), this, SLOT(transcoderDestroyed()));
 	transcoders.push_back(transcoder);
-	ui.queue_jobs->layout()->addWidget(new QueueItem(ui.queue_jobs, transcoder));
-	transcoder->start();
+	ui->queue_jobs->layout()->addWidget(new QueueItem(ui->queue_jobs, transcoder));
+	if (running_jobs() < ui->max_parallel->value())
+		transcoder->start();
 }
 
 bool
@@ -388,20 +404,20 @@ Frontend::cancel()
 void
 Frontend::updateStatus(QString statusText)
 {
-	ui.status->setText(statusText);
+	ui->status->setText(statusText);
 }
 
 void
 Frontend::updateAdvancedMode()
 {
-	bool adv = ui.advanced_mode->isChecked();
-	ui.advanced_mode->setArrowType(adv ? Qt::DownArrow : Qt::UpArrow);
-	ui.partial->setVisible(adv);
-	ui.partial_start->setVisible(adv);
-	ui.partial_end->setVisible(adv);
-	ui.sync->setVisible(adv);
-	ui.no_skeleton->setVisible(adv);
-	ui.tabs->setVisible(adv);
+	bool adv = ui->advanced_mode->isChecked();
+	ui->advanced_mode->setArrowType(adv ? Qt::DownArrow : Qt::UpArrow);
+	ui->partial->setVisible(adv);
+	ui->partial_start->setVisible(adv);
+	ui->partial_end->setVisible(adv);
+	ui->sync->setVisible(adv);
+	ui->no_skeleton->setVisible(adv);
+	ui->tabs->setVisible(adv);
 	layout()->activate();
 	resize(QSize(width(), minimumSize().height()));
 }
@@ -409,7 +425,7 @@ Frontend::updateAdvancedMode()
 void
 Frontend::outputSelected(const QString &s)
 {
-	ui.output->setText(s);
+	ui->output->setText(s);
 	output_auto = false;
 }
 
@@ -417,24 +433,24 @@ void
 Frontend::updateButtons()
 {
 	int running = running_jobs();
-	bool missing_data = ui.input->text().isEmpty() ||
-		ui.output->text().isEmpty() ||
-		ui.input->text() == ui.output->text();
+	bool missing_data = ui->input->text().isEmpty() ||
+		ui->output->text().isEmpty() ||
+		ui->input->text() == ui->output->text();
 	bool encode = encode_audio() || encode_video();
-	bool adv = ui.advanced_mode->isChecked();
+	bool adv = ui->advanced_mode->isChecked();
 	bool can_start = (adv || !running) && !missing_data && encode && input_valid;
 
-	ui.output_select->setEnabled(input_valid);
-	ui.output->setEnabled(input_valid);
-	ui.transcode->setText(adv && running ? QString("Add to Queue") : QString("Start"));
-	ui.transcode->setEnabled(can_start);
-	ui.transcode->setDefault(can_start);
-	ui.cancel->setEnabled(running);
-	ui.partial->setEnabled(input_valid);
-	ui.progress->setEnabled(running);
+	ui->output_select->setEnabled(input_valid);
+	ui->output->setEnabled(input_valid);
+	ui->transcode->setText(adv && running ? QString("Add to Queue") : QString("Start"));
+	ui->transcode->setEnabled(can_start);
+	ui->transcode->setDefault(can_start);
+	ui->cancel->setEnabled(running);
+	ui->partial->setEnabled(input_valid);
+	ui->progress->setEnabled(running);
 	if (!running) {
-		ui.progress->setMaximum(100);
-		ui.progress->reset();
+		ui->progress->setMaximum(100);
+		ui->progress->reset();
 	}
 	checkForSomethingToEncode();
 	DEPEND(partial_start, partial);
@@ -449,7 +465,7 @@ Frontend::checkForSomethingToEncode()
 	if (input_valid) {
 		if (!encode_audio() && !encode_video())
 			updateStatus("Nothing to encode");
-		else if (ui.input->text() == ui.output->text())
+		else if (ui->input->text() == ui->output->text())
 			updateStatus("Input and output filenames must differ");
 		else
 			updateStatus("");
@@ -466,15 +482,15 @@ Frontend::transcoderDestroyed()
 void
 Frontend::outputChanged()
 {
-	if (ui.output->text().endsWith(".ogg"))
-		ui.no_skeleton->setChecked(true);
-	else if (ui.output->text().endsWith(".oga")) {
-		ui.no_skeleton->setChecked(false);
-		ui.video_encode->setChecked(false);
-	} else if (ui.output->text().endsWith(".ogv")) {
-		ui.no_skeleton->setChecked(false);
+	if (ui->output->text().endsWith(".ogg"))
+		ui->no_skeleton->setChecked(true);
+	else if (ui->output->text().endsWith(".oga")) {
+		ui->no_skeleton->setChecked(false);
+		ui->video_encode->setChecked(false);
+	} else if (ui->output->text().endsWith(".ogv")) {
+		ui->no_skeleton->setChecked(false);
 		if (!finfo.video_streams.empty())
-			ui.video_encode->setChecked(true);
+			ui->video_encode->setChecked(true);
 	}
 	updateButtons();
 }
@@ -514,7 +530,7 @@ clear_filedialog_selection(QFileDialog *dlg)
 void
 Frontend::setDefaultOutput()
 {
-	QString s = ui.input->text();
+	QString s = ui->input->text();
 	if (s.isEmpty())
 		return;
 
@@ -522,7 +538,7 @@ Frontend::setDefaultOutput()
 	QString name = f.completeBaseName() + "." + default_extension();
 	bool has_path = f.fileName() != f.filePath();
 	QString out = has_path ? f.dir().filePath(name) : name;
-	ui.output->setText(out);
+	ui->output->setText(out);
 	output_dlg.setDirectory(f.dir());
 	clear_filedialog_selection(&output_dlg);
 	output_dlg.selectFile(name);
@@ -624,8 +640,8 @@ Frontend::retrieveInfo()
 {
 	input_valid = false;
 	finfo = FileInfo();
-	ui.partial->setCheckState(Qt::Unchecked);
-	QString input = ui.input->text();
+	ui->partial->setCheckState(Qt::Unchecked);
+	QString input = ui->input->text();
 
 	try {
 		QFileInfo fi(input);
@@ -638,27 +654,27 @@ Frontend::retrieveInfo()
 		finfo.retrieve(input);
 
 		double max_time = finfo.duration > 0 ? finfo.duration : MAX_TIME;
-		ui.partial_start->setMinimum(0);
-		ui.partial_start->setMaximum(max_time);
-		ui.partial_start->setValue(0);
-		ui.partial_end->setMinimum(0);
-		ui.partial_end->setMaximum(max_time);
-		ui.partial_end->setValue(finfo.duration > 0 ? finfo.duration : 0);
+		ui->partial_start->setMinimum(0);
+		ui->partial_start->setMaximum(max_time);
+		ui->partial_start->setValue(0);
+		ui->partial_end->setMinimum(0);
+		ui->partial_end->setMaximum(max_time);
+		ui->partial_end->setValue(finfo.duration > 0 ? finfo.duration : 0);
 
 		input_valid = true;
 		updateStatus("");
 	} catch (std::exception &x) {
 		updateStatus(x.what());
 	}
-	ui.audio_encode->setEnabled(!finfo.audio_streams.empty());
-	ui.audio_encode->setChecked(!finfo.audio_streams.empty());
-	ui.video_encode->setEnabled(!finfo.video_streams.empty());
-	ui.video_encode->setChecked(!finfo.video_streams.empty());
+	ui->audio_encode->setEnabled(!finfo.audio_streams.empty());
+	ui->audio_encode->setChecked(!finfo.audio_streams.empty());
+	ui->video_encode->setEnabled(!finfo.video_streams.empty());
+	ui->video_encode->setChecked(!finfo.video_streams.empty());
 
-	get_streams(ui.info_audio_stream, finfo.audio_streams);
-	get_streams(ui.info_video_stream, finfo.video_streams);
-	get_streams(ui.audio_stream, finfo.audio_streams);
-	get_streams(ui.video_stream, finfo.video_streams);
+	get_streams(ui->info_audio_stream, finfo.audio_streams);
+	get_streams(ui->info_video_stream, finfo.video_streams);
+	get_streams(ui->audio_stream, finfo.audio_streams);
+	get_streams(ui->video_stream, finfo.video_streams);
 
 	setDefaultOutput();
 	updateButtons();
@@ -672,10 +688,10 @@ Frontend::retrieveInfo()
 void
 Frontend::updateInfo()
 {
-#define FIELD(f, uif, t, o) ui. uif ->setText((o != NULL && input_valid) ? present_##t(o->f) : QString(""));
+#define FIELD(f, uif, t, o) ui-> uif ->setText((o != NULL && input_valid) ? present_##t(o->f) : QString(""));
 #define FILE_FIELD(f, c) FIELD(f, info_##f, c, (&finfo))
-#define ASTREAM_FIELD(f, c) FIELD(f, info_audio_##f, c, stream(ui.info_audio_stream, finfo.audio_streams))
-#define VSTREAM_FIELD(f, c) FIELD(f, info_video_##f, c, stream(ui.info_video_stream, finfo.video_streams))
+#define ASTREAM_FIELD(f, c) FIELD(f, info_audio_##f, c, stream(ui->info_audio_stream, finfo.audio_streams))
+#define VSTREAM_FIELD(f, c) FIELD(f, info_video_##f, c, stream(ui->info_video_stream, finfo.video_streams))
 		FIELDS
 #undef FIELD
 }
@@ -724,46 +740,46 @@ Frontend::updateAudio()
 {
 	int i;
 
-	layout_enable(ui.audio_options_layout, encode_audio());
-	ui.audio_channels->clear();
-	ui.audio_samplerate->clear();
-	ui.audio_bitrate->clear();
-	const AudioStreamInfo *s = stream(ui.audio_stream, finfo.audio_streams);
+	layout_enable(ui->audio_options_layout, encode_audio());
+	ui->audio_channels->clear();
+	ui->audio_samplerate->clear();
+	ui->audio_bitrate->clear();
+	const AudioStreamInfo *s = stream(ui->audio_stream, finfo.audio_streams);
 	if (s != NULL) {
 		for (i = 0; i < s->channels; i++)
-			ui.audio_channels->addItem(QString::number(i + 1));
+			ui->audio_channels->addItem(QString::number(i + 1));
 		for (i = 0; i < LENGTH(samplerates); i++)
 			if (s->samplerate <= 0 || samplerates[i] <= s->samplerate)
-				ui.audio_samplerate->addItem(QString::number(samplerates[i]));
-		if (ui.audio_samplerate->count() <= 0 && s->samplerate > 0)
-			ui.audio_samplerate->addItem(QString::number(s->samplerate));
+				ui->audio_samplerate->addItem(QString::number(samplerates[i]));
+		if (ui->audio_samplerate->count() <= 0 && s->samplerate > 0)
+			ui->audio_samplerate->addItem(QString::number(s->samplerate));
 		for (i = 0; i < LENGTH(bitrates); i++)
 			if (s->bitrate <= 0 || bitrates[i] <= s->bitrate)
-				ui.audio_bitrate->addItem(QString::number(bitrates[i]));
-		select_last(ui.audio_channels);
-		select_last(ui.audio_samplerate);
-		select_last(ui.audio_bitrate);
+				ui->audio_bitrate->addItem(QString::number(bitrates[i]));
+		select_last(ui->audio_channels);
+		select_last(ui->audio_samplerate);
+		select_last(ui->audio_bitrate);
 	}
 }
 
 void
 Frontend::updateVideo(bool another_file)
 {
-	layout_enable(ui.video_options_layout, encode_video());
-	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
+	layout_enable(ui->video_options_layout, encode_video());
+	const VideoStreamInfo *s = stream(ui->video_stream, finfo.video_streams);
 	if (another_file && s != NULL) {
-		ui.video_width->setValue(s->width);
-		ui.video_height->setValue(s->height);
+		ui->video_width->setValue(s->width);
+		ui->video_height->setValue(s->height);
 
-		ui.video_crop_left->setValue(0);
-		ui.video_crop_right->setValue(0);
-		ui.video_crop_top->setValue(0);
-		ui.video_crop_bottom->setValue(0);
+		ui->video_crop_left->setValue(0);
+		ui->video_crop_right->setValue(0);
+		ui->video_crop_top->setValue(0);
+		ui->video_crop_bottom->setValue(0);
 
-		ui.video_crop_left->setMaximum(s->width);
-		ui.video_crop_right->setMaximum(s->width);
-		ui.video_crop_top->setMaximum(s->height);
-		ui.video_crop_bottom->setMaximum(s->height);
+		ui->video_crop_left->setMaximum(s->width);
+		ui->video_crop_right->setMaximum(s->width);
+		ui->video_crop_top->setMaximum(s->height);
+		ui->video_crop_bottom->setMaximum(s->height);
 	}
 	updateAdvanced(another_file);
 }
@@ -778,22 +794,22 @@ void
 Frontend::updateSubtitles(bool another_file)
 {
 	if (another_file)
-		ui.subtitles_add->setChecked(false);
-	ui.subtitles_ignore_nonutf->setEnabled(is_utf(ui.subtitles_encoding->currentText()));
-	layout_enable(ui.subtitles_options_layout, ui.subtitles_add->isChecked());
-	QFileInfo fi(ui.subtitles_file->text());
-	ui.subtitles_options->setEnabled(ui.subtitles_add->isChecked() && fi.exists() && fi.isFile());
+		ui->subtitles_add->setChecked(false);
+	ui->subtitles_ignore_nonutf->setEnabled(is_utf(ui->subtitles_encoding->currentText()));
+	layout_enable(ui->subtitles_options_layout, ui->subtitles_add->isChecked());
+	QFileInfo fi(ui->subtitles_file->text());
+	ui->subtitles_options->setEnabled(ui->subtitles_add->isChecked() && fi.exists() && fi.isFile());
 }
 
 void
 Frontend::updateAdvanced(bool another_file)
 {
 	if (another_file)
-		ui.advanced_adjust->setChecked(false);
-	ui.advanced_contrast_label->setText(QString().sprintf("%.1f", ui.advanced_contrast->value() / ADJUST_SCALE));
-	ui.advanced_brightness_label->setText(QString().sprintf("%.1f", ui.advanced_brightness->value() / ADJUST_SCALE));
-	ui.advanced_gamma_label->setText(QString().sprintf("%.1f", ui.advanced_gamma->value() / ADJUST_SCALE));
-	ui.advanced_saturation_label->setText(QString().sprintf("%.1f", ui.advanced_saturation->value() / ADJUST_SCALE));
+		ui->advanced_adjust->setChecked(false);
+	ui->advanced_contrast_label->setText(QString().sprintf("%.1f", ui->advanced_contrast->value() / ADJUST_SCALE));
+	ui->advanced_brightness_label->setText(QString().sprintf("%.1f", ui->advanced_brightness->value() / ADJUST_SCALE));
+	ui->advanced_gamma_label->setText(QString().sprintf("%.1f", ui->advanced_gamma->value() / ADJUST_SCALE));
+	ui->advanced_saturation_label->setText(QString().sprintf("%.1f", ui->advanced_saturation->value() / ADJUST_SCALE));
 	DEPEND(advanced_adjust, video_encode);
 	DEPEND(advanced_keyint, video_encode);
 	DEPEND(advanced_bdelay, video_const_bitrate);
@@ -804,8 +820,8 @@ void
 Frontend::updateMetadata(bool another_file)
 {
 	if (another_file)
-		ui.metadata_add->setChecked(false);
-	layout_enable(ui.metadata_options_layout, ui.metadata_add->isChecked());
+		ui->metadata_add->setChecked(false);
+	layout_enable(ui->metadata_options_layout, ui->metadata_add->isChecked());
 }
 
 static const char *extensions[] = {
@@ -852,10 +868,10 @@ output_filter(bool has_video)
 void
 Frontend::fixExtension()
 {
-	QString out = ui.output->text();
+	QString out = ui->output->text();
 	if (out.endsWith(".ogv") || out.endsWith(".oga") || out.endsWith(".ogg")) {
 		out.chop(4);
-		ui.output->setText(out + "." + default_extension());
+		ui->output->setText(out + "." + default_extension());
 	}
 }
 
@@ -867,68 +883,68 @@ Frontend::selectOutput()
 	bool no_video = input_valid && finfo.video_streams.empty();
 	output_dlg.setNameFilter(output_filter(!no_video));
 	output_dlg.selectNameFilter(QString("*.") + ext);
-	output_dlg.selectFile(ui.output->text());
+	output_dlg.selectFile(ui->output->text());
 	output_dlg.exec();
 }
 
 QString
 Frontend::default_extension() const
 {
-	return ui.no_skeleton->isChecked() ? "ogg" : (encode_video() ? "ogv" : "oga");
+	return ui->no_skeleton->isChecked() ? "ogg" : (encode_video() ? "ogv" : "oga");
 }
 
 double
 Frontend::cropped_aspect() const
 {
-	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
-	double x = s->width - ui.video_crop_left->value() - ui.video_crop_right->value();
-	double y = s->height - ui.video_crop_top->value() - ui.video_crop_bottom->value();
+	const VideoStreamInfo *s = stream(ui->video_stream, finfo.video_streams);
+	double x = s->width - ui->video_crop_left->value() - ui->video_crop_right->value();
+	double y = s->height - ui->video_crop_top->value() - ui->video_crop_bottom->value();
 	return x / y;
 }
 
 void
 Frontend::fixVideoWidth()
 {
-	if (ui.video_keep_proportions->isChecked())
-		ui.video_width->setValue(int(ui.video_height->value() * cropped_aspect() + 0.5));
+	if (ui->video_keep_proportions->isChecked())
+		ui->video_width->setValue(int(ui->video_height->value() * cropped_aspect() + 0.5));
 }
 
 void
 Frontend::fixVideoHeight()
 {
-	if (ui.video_keep_proportions->isChecked())
-		ui.video_height->setValue(int(ui.video_width->value() / cropped_aspect() + 0.5));
+	if (ui->video_keep_proportions->isChecked())
+		ui->video_height->setValue(int(ui->video_width->value() / cropped_aspect() + 0.5));
 }
 
 void
 Frontend::xcropChanged()
 {
-	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
-	ui.video_crop_left->setMaximum(s->width - ui.video_crop_right->value() - 1);
-	ui.video_crop_right->setMaximum(s->width - ui.video_crop_left->value() - 1);
+	const VideoStreamInfo *s = stream(ui->video_stream, finfo.video_streams);
+	ui->video_crop_left->setMaximum(s->width - ui->video_crop_right->value() - 1);
+	ui->video_crop_right->setMaximum(s->width - ui->video_crop_left->value() - 1);
 	fixVideoWidth();
 }
 
 void
 Frontend::ycropChanged()
 {
-	const VideoStreamInfo *s = stream(ui.video_stream, finfo.video_streams);
-	ui.video_crop_top->setMaximum(s->height - ui.video_crop_bottom->value() - 1);
-	ui.video_crop_bottom->setMaximum(s->height - ui.video_crop_top->value() - 1);
+	const VideoStreamInfo *s = stream(ui->video_stream, finfo.video_streams);
+	ui->video_crop_top->setMaximum(s->height - ui->video_crop_bottom->value() - 1);
+	ui->video_crop_bottom->setMaximum(s->height - ui->video_crop_top->value() - 1);
 	fixVideoHeight();
 }
 
 void
 Frontend::videoWidthChanged()
 {
-	if (ui.video_width->hasFocus())
+	if (ui->video_width->hasFocus())
 		fixVideoHeight();
 }
 
 void
 Frontend::videoHeightChanged()
 {
-	if (ui.video_height->hasFocus())
+	if (ui->video_height->hasFocus())
 		fixVideoWidth();
 }
 
@@ -943,11 +959,14 @@ Frontend::updateSoftTarget()
 void
 Frontend::resetAdjust()
 {
-	ui.advanced_contrast->setValue(int(1.0 * ADJUST_SCALE));
-	ui.advanced_brightness->setValue(int(0.0 * ADJUST_SCALE));
-	ui.advanced_gamma->setValue(int(1.0 * ADJUST_SCALE));
-	ui.advanced_saturation->setValue(int(1.0 * ADJUST_SCALE));
+	ui->advanced_contrast->setValue(int(1.0 * ADJUST_SCALE));
+	ui->advanced_brightness->setValue(int(0.0 * ADJUST_SCALE));
+	ui->advanced_gamma->setValue(int(1.0 * ADJUST_SCALE));
+	ui->advanced_saturation->setValue(int(1.0 * ADJUST_SCALE));
 }
+
+#define READ_FLAG(f, def) ui->f->setChecked(settings.value(#f, def).toBool())
+#define WRITE_FLAG(f) settings.setValue(#f, ui->f->isChecked())
 
 void
 Frontend::readSettings()
@@ -955,10 +974,12 @@ Frontend::readSettings()
 	QSettings settings("QTheoraFrontend team", "QTheoraFrontend");
 	QPoint pos = settings.value("pos", QPoint(200, 200)).toPoint();
 	QSize size = settings.value("size", QSize(400, 300)).toSize();
-	bool adv = settings.value("advanced_mode", false).toBool();
 	resize(size);
 	move(pos);
-	ui.advanced_mode->setChecked(adv);
+	READ_FLAG(advanced_mode, false);
+	READ_FLAG(keep_partial, false);
+	ui->max_parallel->setValue(settings.value("max_parallel",
+		QThread::idealThreadCount()).toInt());
 }
 
 void
@@ -967,5 +988,13 @@ Frontend::writeSettings()
 	QSettings settings("QTheoraFrontend team", "QTheoraFrontend");
 	settings.setValue("pos", pos());
 	settings.setValue("size", size());
-	settings.setValue("advanced_mode", ui.advanced_mode->isChecked());
+	WRITE_FLAG(advanced_mode);
+	WRITE_FLAG(keep_partial);
+	settings.setValue("max_parallel", ui->max_parallel->value());
+}
+
+void
+Frontend::keepPartialChanged()
+{
+	Transcoder::keep_partial = ui->keep_partial->isChecked();
 }

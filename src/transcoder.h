@@ -48,6 +48,9 @@ public:
 		FAILED,
 		STOPPED
 	};
+	
+	volatile static bool keep_partial;
+	
 public slots:
 	void start();
 	void stop();

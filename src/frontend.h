@@ -26,7 +26,9 @@
 #include <QList>
 #include "transcoder.h"
 #include "fileinfo.h"
-#include "ui_dialog.h"
+#include "util.h"
+
+class Ui_Dialog;
 
 class Frontend : public QDialog
 {
@@ -36,11 +38,11 @@ public:
 	Frontend(QWidget* parent = 0);
 	int cancel_ask(const QString &, bool);
 	int running_jobs() const;
+	bool encode_audio() const;
+	bool encode_video() const;
 
 protected:
 	void closeEvent(QCloseEvent *);
-	bool encode_audio() const { return ui.audio_encode->isChecked(); }
-	bool encode_video() const { return ui.video_encode->isChecked(); }
 	QString default_extension() const;
 	double cropped_aspect() const;
 
@@ -77,9 +79,10 @@ protected slots:
 	void videoHeightChanged();
 	void updateSoftTarget();
 	void resetAdjust();
+	void keepPartialChanged();
 
 private:
-	Ui::Dialog ui;
+	pimpl_ptr<Ui_Dialog> ui;
 	QFileDialog input_dlg, output_dlg, subtitles_dlg;
 	bool output_auto;
 	bool exitting;

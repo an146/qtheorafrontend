@@ -30,6 +30,8 @@
 #include "transcoder.h"
 #include "util.h"
 
+volatile bool Transcoder::keep_partial = false;
+	
 Transcoder::Transcoder(QString i, QString o, QStringList ea)
 	: QThread(NULL),
 	input_filename_(i),
@@ -110,12 +112,17 @@ Transcoder::readyRead()
 void
 Transcoder::procFinished(int status, QProcess::ExitStatus qstatus)
 {
-	if (stopping_)
+	bool partial;
+	if (stopping_) {
 		emit finished(STOPPED);
-	else {
+		partial = true;
+	} else {
 		bool ok = status == 0 && qstatus == 0;
 		emit finished(ok ? OK : FAILED);
+		partial = ok;
 	}
+	if (partial && !keep_partial)
+		QFile(output_filename()).remove();
 	quit();
 }
 

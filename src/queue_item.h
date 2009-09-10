@@ -8,9 +8,10 @@
 #define H_QUEUE_ITEM
 
 #include <QFrame>
-#include "ui_queue_item.h"
+#include "util.h"
 
 class Transcoder;
+class Ui_QueueItem;
 
 class QueueItem : public QFrame
 {
@@ -31,8 +32,9 @@ protected slots:
 	void updateStatus(double duration, double pos, double eta, double audio_b, double video_b, int pass, QString);
 
 private:
-	Ui::QueueItem ui;
+	pimpl_ptr<Ui_QueueItem> ui;
 	Transcoder *transcoder;
+	bool finished_ok;
 };
 
 #endif /* H_QUEUE_ITEM */
