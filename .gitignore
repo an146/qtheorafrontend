@@ -1,17 +1,15 @@
 # VIM swap files
 *.swp
 
-# Test videos
+# Test stuff
 *.flv
 *.ogv
+*.srt
 
-# Qt-generated stuff
-moc_*
-qrc_*
+# build stuff
+build
 Makefile
-ui_*.h
 
 # Binary
-*.o
 *.exe
 qtheorafrontend
