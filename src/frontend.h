@@ -42,6 +42,10 @@ protected:
 	bool encode_audio() const { return ui.audio_encode->isChecked(); }
 	bool encode_video() const { return ui.video_encode->isChecked(); }
 	QString default_extension() const;
+	double cropped_aspect() const;
+
+	void readSettings();
+	void writeSettings();
 
 protected slots:
 	void transcode();
@@ -65,7 +69,6 @@ protected slots:
 	void updateSubtitles(bool another_file = false);
 	void updateAdvanced(bool another_file = false);
 	void updateMetadata(bool another_file = false);
-	double cropped_aspect() const;
 	void fixVideoWidth();
 	void fixVideoHeight();
 	void xcropChanged();
@@ -74,9 +77,6 @@ protected slots:
 	void videoHeightChanged();
 	void updateSoftTarget();
 	void resetAdjust();
-
-	void readSettings();
-	void writeSettings();
 
 private:
 	Ui::Dialog ui;
