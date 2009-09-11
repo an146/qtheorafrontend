@@ -262,6 +262,16 @@ Frontend::queue_items_running() const
 	return ret;
 }
 
+int
+Frontend::queue_items_pending() const
+{
+	int ret = 0;
+	for (int i = 0; i < queue_items(); i++)
+		if (!queue_item(i)->transcoder()->runs())
+			ret++;
+	return ret;
+}
+
 QueueItem *
 Frontend::queue_item(int i) const
 {
@@ -390,11 +400,13 @@ Frontend::transcode()
 #undef OPTION_DEFVALUE
 
 	Transcoder *transcoder = new Transcoder(ui->input->text(), ui->output->text(), ea);
-	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
+	connect(transcoder, SIGNAL(started()), this, SLOT(transcoderStarted()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(checkQueue()));
 	connect(transcoder, SIGNAL(destroyed()), this, SLOT(updateButtons()));
-	ui->queue_items->layout()->addWidget(new QueueItem(ui->queue_items, transcoder, finfo));
+	QueueItem *qi = new QueueItem(ui->queue_items, transcoder, finfo);
+	connect(qi, SIGNAL(progressChanged(double)), this, SLOT(updateProgress()));
+	ui->queue_items->layout()->addWidget(qi);
 	if (queue_items_running() < ui->max_parallel->value())
 		transcoder->start();
 }
@@ -477,10 +489,8 @@ Frontend::updateButtons()
 	ui->cancel->setEnabled(running);
 	ui->partial->setEnabled(input_valid);
 	ui->progress->setEnabled(running);
-	if (!running) {
-		ui->progress->setMaximum(100);
+	if (!running)
 		ui->progress->reset();
-	}
 	checkForSomethingToEncode();
 	DEPEND(partial_start, partial);
 	DEPEND(partial_end, partial);
@@ -499,6 +509,20 @@ Frontend::checkForSomethingToEncode()
 		else
 			updateStatus("");
 	}
+}
+
+void
+Frontend::transcoderStarted()
+{
+	if (!queue_items_pending()) {
+		for (int i = 0; i < queue_items(); i++) {
+			QueueItem *qi = queue_item(i);
+			if (!qi->transcoder()->isRunning())
+				qi->progress_matters = false;
+		}
+	}
+	updateButtons();
+	updateProgress();
 }
 
 void
@@ -661,6 +685,32 @@ stream(const QComboBox *cb, const QList<Info> &list)
 	if (i < 0 || i >= list.size())
 		return NULL;
 	return &list[i];
+}
+
+void
+Frontend::updateProgress()
+{
+	double progress = 0;
+	double eta = 0;
+	int n = 0;
+	for (int i = 0; i < queue_items(); i++)
+		if (queue_item(i)->progress_matters)
+			n++;
+	for (int i = 0; i < queue_items(); i++) {
+		QueueItem *qi = queue_item(i);
+		if (qi->progress_matters) {
+			progress += qi->progress() / n;
+			if (eta >= 0 && qi->eta() >= 0)
+				eta += qi->eta();
+			else if (qi->eta() < 0)
+				eta = -1;
+		}
+	}
+	ui->progress->setValue((int)(progress * 100));
+	QString format = "%p%";
+	if (eta > 0)
+		format += QString("   ETA: ") + time2string(eta, 0, false);
+	ui->progress->setFormat(format);
 }
 
 void

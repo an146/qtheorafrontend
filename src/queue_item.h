@@ -21,9 +21,14 @@ public:
 	QueueItem(QWidget *, Transcoder *, const FileInfo &);
 	~QueueItem();
 	double progress() const { return progress_; }
+	double eta() const { return eta_; }
 	Transcoder *transcoder() { return transcoder_; }
 	const FileInfo &fileinfo() const;
+	bool progress_matters;
 
+signals:
+	void progressChanged(double);
+	
 protected:
 	void focusInEvent(QFocusEvent *);
 	void focusOutEvent(QFocusEvent *);
@@ -40,7 +45,7 @@ private:
 	
 	Transcoder *transcoder_;
 	bool finished_ok_;
-	double progress_;
+	double progress_, eta_;
 };
 
 #endif /* H_QUEUE_ITEM */

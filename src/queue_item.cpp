@@ -22,10 +22,12 @@ struct QueueItem::Impl
 
 QueueItem::QueueItem(QWidget *parent, Transcoder *t, const FileInfo &_fi)
 	: QFrame(parent),
+	progress_matters(true),
 	impl(_fi),
 	transcoder_(t),
 	finished_ok_(false),
-	progress_(0)
+	progress_(0),
+	eta_(-1)
 {
 	impl->ui.setupUi(this);
 	impl->ui.filenames->setText(t->input_filename() + " -> " + t->output_filename());
@@ -99,6 +101,7 @@ QueueItem::finished(int reason)
 		break;
 	}
 
+	emit progressChanged(progress_);
 	impl->ui.status->setText(finish_message);
 }
 
@@ -115,6 +118,9 @@ QueueItem::transcoderStarted()
 	}
 	impl->ui.log->moveCursor(QTextCursor::End);
 	impl->ui.log->insertHtml("<b>" + cmdline + "</b><br>");
+	progress_matters = true;
+	progress_ = 0;
+	eta_ = -1;
 }
 
 static void
@@ -147,9 +153,12 @@ QueueItem::updateStatus(double duration, double pos, double eta, double audio_b,
 	if (video_b > 0)
 		status += "   Video Bitrate: " + QString::number(video_b, 'f', 0);
 	status += "   Time Elapsed: " + time2string(transcoder()->elapsed(), 0, false);
+	eta_ = eta;
 	
-	if (duration > 0 && pos > 0 && pos < duration)
+	if (duration > 0 && pos > 0 && pos < duration) {
 		progress_ = pos / duration;
+		emit progressChanged(progress_);
+	}
 
 	QString format =
 		pass == 0 ? QString("First pass: ") :
@@ -159,10 +168,10 @@ QueueItem::updateStatus(double duration, double pos, double eta, double audio_b,
 	format += "%p%";
 	if (eta > 0)
 		format += QString("   ETA: ") + time2string(eta, 0, false);
+	impl->ui.progress->setFormat(format);
 	
 	int ipos = (int)pos;
 	int idur = (int)duration;
-	impl->ui.progress->setFormat(format);
 	if (ipos < idur) {
 		impl->ui.progress->setMaximum(idur);
 		impl->ui.progress->setValue(ipos);

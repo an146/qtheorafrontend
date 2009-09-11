@@ -38,6 +38,7 @@ public:
 	int cancel_ask(const QString &, bool);
 	int queue_items() const;
 	int queue_items_running() const;
+	int queue_items_pending() const;
 	QueueItem *queue_item(int) const;
 	bool encode_audio() const;
 	bool encode_video() const;
@@ -57,6 +58,7 @@ protected slots:
 	void updateStatus(QString statusText);
 	void updateButtons();
 	void checkForSomethingToEncode();
+	void transcoderStarted();
 	void transcoderDestroyed();
 
 	void updateAdvancedMode();
@@ -66,6 +68,7 @@ protected slots:
 	void fixExtension();
 	void selectOutput();
 
+	void updateProgress();
 	void retrieveInfo();
 	void updateInfo();
 	void updateAudio();
