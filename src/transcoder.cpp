@@ -36,7 +36,8 @@ Transcoder::Transcoder(QString i, QString o, QStringList ea)
 	: QThread(NULL),
 	input_filename_(i),
 	output_filename_(o),
-	extra_args_(ea)
+	extra_args_(ea),
+	runs_(0)
 {
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
 	proc_.moveToThread(this);
@@ -51,6 +52,7 @@ Transcoder::start()
 {
 	if (!isRunning()) {
 		start_time_ = QDateTime::currentDateTime();
+		runs_++;
 		QThread::start();
 	}
 }

@@ -1,5 +1,6 @@
 #include <QFile>
 #include <QScrollBar>
+#include "fileinfo.h"
 #include "queue_item.h"
 #include "transcoder.h"
 #include "ui_queue_item.h"
@@ -8,16 +9,29 @@
 const QPalette::ColorRole normal_role = QPalette::Button;
 const QPalette::ColorRole selected_role = QPalette::Base;
 
-QueueItem::QueueItem(QWidget *parent, Transcoder *t)
-	: QFrame(parent),
-	transcoder(t),
-	finished_ok(false)
+struct QueueItem::Impl
 {
-	ui->setupUi(this);
-	ui->filenames->setText(t->input_filename() + " -> " + t->output_filename());
-	ui->details->setVisible(false);
-	ui->log->setVisible(false);
-	ui->progress->reset();
+	Ui_QueueItem ui;
+	FileInfo fi;
+	
+	Impl(const FileInfo &_fi)
+		: fi(_fi)
+	{
+	}
+};
+
+QueueItem::QueueItem(QWidget *parent, Transcoder *t, const FileInfo &_fi)
+	: QFrame(parent),
+	impl(_fi),
+	transcoder_(t),
+	finished_ok_(false),
+	progress_(0)
+{
+	impl->ui.setupUi(this);
+	impl->ui.filenames->setText(t->input_filename() + " -> " + t->output_filename());
+	impl->ui.details->setVisible(false);
+	impl->ui.log->setVisible(false);
+	impl->ui.progress->reset();
 	setBackgroundRole(normal_role);
 
 	connect(t, SIGNAL(started()), this, SLOT(transcoderStarted()));
@@ -27,17 +41,23 @@ QueueItem::QueueItem(QWidget *parent, Transcoder *t)
 	connect(t, SIGNAL(statusUpdate(double, double, double, double, double, int, QString)),
 			this, SLOT(updateStatus(double, double, double, double, double, int, QString)));
 
-	connect(ui->details_toggle, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
-	connect(ui->log_toggle, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
-	connect(ui->start, SIGNAL(released()), transcoder, SLOT(start()));
-	connect(ui->stop, SIGNAL(released()), transcoder, SLOT(stop()));
-	connect(ui->remove, SIGNAL(released()), this, SLOT(close()));
+	connect(impl->ui.details_toggle, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
+	connect(impl->ui.log_toggle, SIGNAL(toggled(bool)), this, SLOT(updateButtons()));
+	connect(impl->ui.start, SIGNAL(released()), transcoder(), SLOT(start()));
+	connect(impl->ui.stop, SIGNAL(released()), transcoder(), SLOT(stop()));
+	connect(impl->ui.remove, SIGNAL(released()), this, SLOT(close()));
 	updateButtons();
 }
 
 QueueItem::~QueueItem()
 {
-	delete transcoder;
+	delete transcoder();
+}
+
+const FileInfo &
+QueueItem::fileinfo() const
+{
+	return impl->fi;
 }
 
 void
@@ -58,45 +78,43 @@ void
 QueueItem::finished(int reason)
 {
 	QString finish_message;
-	Transcoder *transcoder = qobject_cast<Transcoder *>(sender());
-	if (transcoder == NULL)
-		return;
 
 	switch (reason) {
 	case Transcoder::OK:
-		if (ui->progress->maximum() > 0)
-			ui->progress->setValue(ui->progress->maximum());
-		else {
-			ui->progress->setMaximum(1);
-			ui->progress->reset();
-		}
+		if (impl->ui.progress->maximum() <= 0)
+			impl->ui.progress->setMaximum(1);
+		impl->ui.progress->setValue(impl->ui.progress->maximum());
+		impl->ui.progress->setFormat("Done");
 		finish_message = "Encoding finished successfully";
-		finished_ok = true;
+		finished_ok_ = true;
+		progress_ = 1;
 		break;
 	case Transcoder::FAILED:
 		finish_message = "Encoding failed";
+		progress_ = 0;
 		break;
 	case Transcoder::STOPPED:
 		finish_message = "Encoding stopped";
+		progress_ = 0;
 		break;
 	}
 
-	ui->status->setText(finish_message);
+	impl->ui.status->setText(finish_message);
 }
 
 void
 QueueItem::transcoderStarted()
 {
 	QString cmdline;
-	foreach (QString arg, QStringList() << Transcoder::ffmpeg2theora() << transcoder->args()) {
+	foreach (QString arg, QStringList() << Transcoder::ffmpeg2theora() << transcoder()->args()) {
 		if (arg.contains(" "))
 			cmdline += "\"" + arg + "\"";
 		else
 			cmdline += arg;
 		cmdline += " ";
 	}
-	ui->log->moveCursor(QTextCursor::End);
-	ui->log->insertHtml("<b>" + cmdline + "</b><br>");
+	impl->ui.log->moveCursor(QTextCursor::End);
+	impl->ui.log->insertHtml("<b>" + cmdline + "</b><br>");
 }
 
 static void
@@ -108,22 +126,18 @@ update_arrow(QToolButton *btn)
 void
 QueueItem::updateButtons()
 {
-	update_arrow(ui->details_toggle);
-	update_arrow(ui->log_toggle);
+	update_arrow(impl->ui.details_toggle);
+	update_arrow(impl->ui.log_toggle);
 
-	bool r = transcoder->isRunning();
-	ui->start->setEnabled(!r && !finished_ok);
-	ui->stop->setEnabled(r);
-	ui->remove->setEnabled(!r);
+	bool r = transcoder()->isRunning();
+	impl->ui.start->setEnabled(!r && !finished_ok_);
+	impl->ui.stop->setEnabled(r);
+	impl->ui.remove->setEnabled(!r);
 }
 
 void
 QueueItem::updateStatus(double duration, double pos, double eta, double audio_b, double video_b, int pass, QString raw)
 {
-	Transcoder *transcoder = qobject_cast<Transcoder *>(sender());
-	if (transcoder == NULL)
-		return;
-
 	QString status = "";
 	status += "Position: " + time2string(pos);
 	if (duration > 0)
@@ -132,7 +146,10 @@ QueueItem::updateStatus(double duration, double pos, double eta, double audio_b,
 		status += "   Audio Bitrate: " + QString::number(audio_b, 'f', 0);
 	if (video_b > 0)
 		status += "   Video Bitrate: " + QString::number(video_b, 'f', 0);
-	status += "   Time Elapsed: " + time2string(transcoder->elapsed(), 0, false);
+	status += "   Time Elapsed: " + time2string(transcoder()->elapsed(), 0, false);
+	
+	if (duration > 0 && pos > 0 && pos < duration)
+		progress_ = pos / duration;
 
 	QString format =
 		pass == 0 ? QString("First pass: ") :
@@ -145,21 +162,21 @@ QueueItem::updateStatus(double duration, double pos, double eta, double audio_b,
 	
 	int ipos = (int)pos;
 	int idur = (int)duration;
-	ui->progress->setFormat(format);
+	impl->ui.progress->setFormat(format);
 	if (ipos < idur) {
-		ui->progress->setMaximum(idur);
-		ui->progress->setValue(ipos);
+		impl->ui.progress->setMaximum(idur);
+		impl->ui.progress->setValue(ipos);
 	} else {
-		ui->progress->setMaximum(0);
-		ui->progress->setValue(0);
+		impl->ui.progress->setMaximum(0);
+		impl->ui.progress->setValue(0);
 	}
-	ui->status->setText(status);
+	impl->ui.status->setText(status);
 	
-	QTextCursor cur(ui->log->textCursor());
+	QTextCursor cur(impl->ui.log->textCursor());
 	cur.setCharFormat(QTextCharFormat());
 	cur.movePosition(QTextCursor::End);
 	
-	QScrollBar *vs = ui->log->verticalScrollBar();
+	QScrollBar *vs = impl->ui.log->verticalScrollBar();
 	bool scroll_to_end = vs->value() == vs->maximum();
 	cur.insertText(raw + "\n");
 	if (scroll_to_end)

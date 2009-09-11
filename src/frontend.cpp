@@ -20,14 +20,16 @@
  *
  */
 
-#include <stdexcept>
+#include <cassert>
 #include <cstring>
+#include <stdexcept>
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QPlastiqueStyle>
 #include <QSettings>
 #include "frontend.h"
 #include "queue_item.h"
+#include "transcoder.h"
 #include "ui_dialog.h"
 
 #define LENGTH(x) int(sizeof(x) / sizeof(*x))
@@ -245,19 +247,34 @@ Frontend::encode_video() const
 }
 	
 int
-Frontend::running_jobs() const
+Frontend::queue_items() const
+{
+	return ui->queue_items->layout()->count();
+}
+
+int
+Frontend::queue_items_running() const
 {
 	int ret = 0;
-	foreach (Transcoder *transcoder, transcoders)
-		if (transcoder->isRunning())
+	for (int i = 0; i < queue_items(); i++)
+		if (queue_item(i)->transcoder()->isRunning())
 			ret++;
 	return ret;
+}
+
+QueueItem *
+Frontend::queue_item(int i) const
+{
+	QLayoutItem *li = ui->queue_items->layout()->itemAt(i);
+	QueueItem *qi = qobject_cast<QueueItem *>(li->widget());
+	assert(qi != NULL);
+	return qi;
 }
 
 void
 Frontend::closeEvent(QCloseEvent *event)
 {
-	if (!running_jobs()) {
+	if (!queue_items_running()) {
 		writeSettings();
 		event->accept();
 	} else {
@@ -375,10 +392,10 @@ Frontend::transcode()
 	Transcoder *transcoder = new Transcoder(ui->input->text(), ui->output->text(), ea);
 	connect(transcoder, SIGNAL(started()), this, SLOT(updateButtons()));
 	connect(transcoder, SIGNAL(finished()), this, SLOT(updateButtons()));
-	connect(transcoder, SIGNAL(destroyed()), this, SLOT(transcoderDestroyed()));
-	transcoders.push_back(transcoder);
-	ui->queue_jobs->layout()->addWidget(new QueueItem(ui->queue_jobs, transcoder));
-	if (running_jobs() < ui->max_parallel->value())
+	connect(transcoder, SIGNAL(finished()), this, SLOT(checkQueue()));
+	connect(transcoder, SIGNAL(destroyed()), this, SLOT(updateButtons()));
+	ui->queue_items->layout()->addWidget(new QueueItem(ui->queue_items, transcoder, finfo));
+	if (queue_items_running() < ui->max_parallel->value())
 		transcoder->start();
 }
 
@@ -394,11 +411,23 @@ Frontend::cancel()
 	);
 
 	if (btn == QMessageBox::Yes) {
-		foreach (Transcoder *transcoder, transcoders)
-			transcoder->stop();
+		for (int i = 0; i < queue_items(); i++)
+			queue_item(i)->transcoder()->stop();
 		return true;
 	} else
 		return false;
+}
+
+void
+Frontend::checkQueue()
+{
+	if (exitting)
+		return;
+	for (int i = 0; i < queue_items(); i++) {
+		Transcoder *t = queue_item(i)->transcoder();
+		if (!t->runs() && queue_items_running() < ui->max_parallel->value())
+			t->start();
+	}
 }
 
 void
@@ -432,7 +461,7 @@ Frontend::outputSelected(const QString &s)
 void
 Frontend::updateButtons()
 {
-	int running = running_jobs();
+	int running = queue_items_running();
 	bool missing_data = ui->input->text().isEmpty() ||
 		ui->output->text().isEmpty() ||
 		ui->input->text() == ui->output->text();
@@ -455,7 +484,7 @@ Frontend::updateButtons()
 	checkForSomethingToEncode();
 	DEPEND(partial_start, partial);
 	DEPEND(partial_end, partial);
-	if (exitting)
+	if (exitting && !queue_items_running())
 		close();
 }
 
@@ -475,7 +504,6 @@ Frontend::checkForSomethingToEncode()
 void
 Frontend::transcoderDestroyed()
 {
-	transcoders.removeAll(qobject_cast<Transcoder *>(sender()));
 	updateButtons();
 }
 

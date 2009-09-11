@@ -40,6 +40,7 @@ public:
 
 	QString input_filename() const { return input_filename_; }
 	QString output_filename() const { return output_filename_; }
+	int runs() const { return runs_; }
 	double elapsed() const;
 	QStringList args() const;
 
@@ -77,6 +78,7 @@ private:
 	QStringList extra_args_;
 	QDateTime start_time_;
 	bool stopping_;
+	int runs_;
 
 	double duration_;
 	double position_;

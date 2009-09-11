@@ -1986,7 +1986,7 @@ more client side buffering and add latency.</string>
             <number>0</number>
            </property>
            <item>
-            <widget class="QFrame" name="queue_jobs">
+            <widget class="QFrame" name="queue_items">
              <layout class="QVBoxLayout" name="verticalLayout_12">
               <property name="spacing">
                <number>0</number>

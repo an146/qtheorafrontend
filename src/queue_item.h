@@ -11,15 +11,18 @@
 #include "util.h"
 
 class Transcoder;
-class Ui_QueueItem;
+class FileInfo;
 
 class QueueItem : public QFrame
 {
 	Q_OBJECT
 
 public:
-	QueueItem(QWidget *, Transcoder *);
+	QueueItem(QWidget *, Transcoder *, const FileInfo &);
 	~QueueItem();
+	double progress() const { return progress_; }
+	Transcoder *transcoder() { return transcoder_; }
+	const FileInfo &fileinfo() const;
 
 protected:
 	void focusInEvent(QFocusEvent *);
@@ -32,9 +35,12 @@ protected slots:
 	void updateStatus(double duration, double pos, double eta, double audio_b, double video_b, int pass, QString);
 
 private:
-	pimpl_ptr<Ui_QueueItem> ui;
-	Transcoder *transcoder;
-	bool finished_ok;
+	struct Impl;
+	pimpl_ptr<Impl> impl;
+	
+	Transcoder *transcoder_;
+	bool finished_ok_;
+	double progress_;
 };
 
 #endif /* H_QUEUE_ITEM */
